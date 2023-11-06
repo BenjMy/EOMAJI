@@ -3,10 +3,8 @@ This project aims to implement a prototype for irrigation mapping and crop yield
 
 ## Irrigation delineation
 
-[EO-MAJI-IrrNet](./figures/EO-MAJI-IrrDelineation.png)
+![EO-MAJI-IrrNet](./figures/EO-MAJI-IrrDelineation.png)
 
 ## Net irrigation estimation
 
-[EO-MAJI-IrrNet](./figures/EO-MAJI-IrrNet.png)
-
-
+![EO-MAJI-IrrNet](./figures/EO-MAJI-IrrNet.png)
