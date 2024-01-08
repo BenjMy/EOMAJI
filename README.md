@@ -12,8 +12,13 @@ other factors (e.g. change in weather or vegetation cover).
 - DHI (R. Guzinski,M. Munk)
 - University of Leicester (D. Ghent)
 
+## Test field sites
+- Burkina Faso
+- Botswana
 
-## Inputs EO-based ET models.
+The datasets are accessible in the OSF: https://osf.io/zxuy5/
+
+## Inputs EO-based ET models
 - Sentinel-2 and Sentinel-3 satellites
 
 ### New satellite missions
