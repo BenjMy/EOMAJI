@@ -13,4 +13,5 @@ dependencies:
     - netCDF4
     - pip
     - pip:
-        - git+https://github.com/hectornieto/pyTSEB
+        - git+https://github.com/BenjMy/pyTSEB
+        - git+https://github.com/hectornieto/pypro4sail
