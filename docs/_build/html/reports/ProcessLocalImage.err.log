@@ -1,0 +1,85 @@
+Traceback (most recent call last):
+  File "/home/z0272571a@CAMPUS.CSIC.ES/miniconda3/envs/pyTSEB/lib/python3.12/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+    executenb(
+  File "/home/z0272571a@CAMPUS.CSIC.ES/miniconda3/envs/pyTSEB/lib/python3.12/site-packages/nbclient/client.py", line 1305, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/z0272571a@CAMPUS.CSIC.ES/miniconda3/envs/pyTSEB/lib/python3.12/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/z0272571a@CAMPUS.CSIC.ES/miniconda3/envs/pyTSEB/lib/python3.12/asyncio/base_events.py", line 684, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/z0272571a@CAMPUS.CSIC.ES/miniconda3/envs/pyTSEB/lib/python3.12/site-packages/nbclient/client.py", line 705, in async_execute
+    await self.async_execute_cell(
+  File "/home/z0272571a@CAMPUS.CSIC.ES/miniconda3/envs/pyTSEB/lib/python3.12/site-packages/nbclient/client.py", line 1058, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/z0272571a@CAMPUS.CSIC.ES/miniconda3/envs/pyTSEB/lib/python3.12/site-packages/nbclient/client.py", line 914, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# Change to have a different colour stretch
+high_flux=600 # Maximum flux value in the display
+low_flux=0 # Minimum flux value in the display
+
+from bokeh.plotting import *
+from bokeh.palettes import RdYlBu11 as colortable
+from bokeh.models.mappers import LinearColorMapper
+from bokeh.io import output_notebook
+import numpy as np
+import gdal
+from bokeh.resources import INLINE
+output_notebook(resources=INLINE)
+
+# Open the file
+fid=gdal.Open(setup.outputFile,gdal.GA_ReadOnly)
+rows=fid.RasterYSize
+cols=fid.RasterXSize
+# read each band and store the arrays
+H=fid.GetRasterBand(1).ReadAsArray()
+LE=fid.GetRasterBand(2).ReadAsArray()
+Rn=fid.GetRasterBand(3).ReadAsArray()
+G=fid.GetRasterBand(4).ReadAsArray()
+del fid
+colortable=list(reversed(colortable))
+map_LE=LinearColorMapper(palette=colortable,high=high_flux,low=low_flux)
+
+# Setup the figure
+s1= figure(title="H",plot_width=cols, plot_height=rows, x_range=[0, cols], y_range=[0, rows])
+s1.axis.visible = None
+s1.image(image=[np.flipud(H)],x=[0],y=[0],dw=cols,dh=rows,color_mapper=map_LE)
+s2= figure(title="LE",plot_width=cols, plot_height=rows, x_range=s1.x_range, y_range=s1.y_range)
+s2.axis.visible = None
+s2.image(image=[np.flipud(LE)],x=[0],y=[0],dw=[cols],dh=[rows],color_mapper=map_LE)
+s3= figure(title="Rn",plot_width=cols, plot_height=rows, x_range=s1.x_range, y_range=s1.y_range)
+s3.image(image=[np.flipud(Rn)],x=[0],y=[0],dw=[cols],dh=[rows],color_mapper=map_LE)
+s3.axis.visible = None
+s4= figure(title="G",plot_width=cols, plot_height=rows, x_range=s1.x_range, y_range=s1.y_range)
+s4.image(image=[np.flipud(G)],x=[0],y=[0],dw=[cols],dh=[rows],color_mapper=map_LE)
+s4.axis.visible = None
+p = gridplot([[s1, s2,s3,s4]], toolbar_location='above')
+
+# Add a colormap legend
+y = np.linspace(low_flux,high_flux,len(colortable))
+dy = y[1]-y[0]
+ramp = figure(tools="", y_range = [0, 1], x_range = [low_flux,high_flux], plot_width = 650, plot_height=100)
+ramp.toolbar_location=None
+ramp.yaxis.visible = None
+ramp.rect(x=y, y=0.5, color=colortable, width=dy, height = 1)
+
+show(p)
+show(ramp);
+------------------
+
+
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mModuleNotFoundError[0m                       Traceback (most recent call last)
+Cell [0;32mIn[2], line 10[0m
+[1;32m      8[0m [38;5;28;01mfrom[39;00m [38;5;21;01mbokeh[39;00m[38;5;21;01m.[39;00m[38;5;21;01mio[39;00m [38;5;28;01mimport[39;00m output_notebook
+[1;32m      9[0m [38;5;28;01mimport[39;00m [38;5;21;01mnumpy[39;00m [38;5;28;01mas[39;00m [38;5;21;01mnp[39;00m
+[0;32m---> 10[0m [38;5;28;01mimport[39;00m [38;5;21;01mgdal[39;00m
+[1;32m     11[0m [38;5;28;01mfrom[39;00m [38;5;21;01mbokeh[39;00m[38;5;21;01m.[39;00m[38;5;21;01mresources[39;00m [38;5;28;01mimport[39;00m INLINE
+[1;32m     12[0m output_notebook(resources[38;5;241m=[39mINLINE)
+
+[0;31mModuleNotFoundError[0m: No module named 'gdal'
+

@@ -1,0 +1,17 @@
+version: 1
+site:
+  title: Welcome to Curvenote
+  options:
+    logo_text: Welcome to Curvenote
+  nav: []
+  actions:
+    - title: Learn More
+      url: https://curvenote.com/docs/web
+  domains: []
+project:
+  title: Welcome to Curvenote
+  description: ''
+  short_title: ''
+  name: web
+  license: CC-BY-4.0
+  open_access: true

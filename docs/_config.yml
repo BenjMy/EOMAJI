@@ -7,8 +7,8 @@ logo: logo.png
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
-execute:
-  execute_notebooks: cache
+#execute:
+#  execute_notebooks: cache
 
 # Define the name of the latex output file for PDF builds
 latex:
@@ -22,7 +22,7 @@ bibtex_bibfiles:
 # Information about where the book exists on the web
 repository:
   url: https://github.com/BenjMy/EOMAJI  # Online location of your book
-  path_to_book: docs  # Optional path to your book, relative to the repository root
+  #path_to_book: docs  # Optional path to your book, relative to the repository root
   branch: main  # Which branch of the repository should be used when creating links (optional)
 
 # Add GitHub buttons to your book
@@ -32,7 +32,9 @@ html:
   use_repository_button: true
 
 launch_buttons:
-  thebe                  : true
-  binderhub_url: "https://mybinder.org/v2/gh/BenjMy/EOMAJI/HEAD"  # The URL for your BinderHub (e.g., https://mybinder.org)
+  notebook_interface: "classic"
+  colab_url: ""
+  thebe: true
+  binderhub_url: "https://mybinder.org"  # The URL for your BinderHub (e.g., https://mybinder.org)
 
   

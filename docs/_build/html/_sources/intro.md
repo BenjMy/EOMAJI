@@ -11,6 +11,16 @@ kernelspec:
   display_name: pyTSEB
   language: python
   name: pytseb
+title: Readme
+description: Field site and processing tools description
+authors:
+  - name: Benjamin Mary
+    orcid: 0000-0001-7199-2885
+    corresponding: true
+    email: benjamin.mary@ica.csic.es
+    affiliations:
+      - ICA-CSIC
+---
 ---
 
 # Welcome to your Jupyter Book
