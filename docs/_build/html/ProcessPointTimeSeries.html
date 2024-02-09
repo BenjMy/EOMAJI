@@ -179,15 +179,7 @@
             </li>
         </ul>
         <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="notebooks.html">Title notebook 1</a></li>
-<li class="toctree-l1"><a class="reference internal" href="notebooks-TSEBkernel.html">Title notebook 1</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pyTSEB_test.html">Title notebook</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Vector_Spaces.html">Vector Spaces</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Vector_Spaces-TSEBkernel.html">Vector Spaces</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ProcessLocalImage.html">Summary</a></li>
-
-
-
+<li class="toctree-l1"><a class="reference internal" href="prepareTSEB.html">Data preprocessing for pyTSEB-PT</a></li>
 </ul>
 
     </div>
@@ -239,6 +231,24 @@
     <i class="fas fa-rocket"></i>
   </button>
   <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://mybinder.org/v2/gh/BenjMy/EOMAJI/main?urlpath=tree/docs/ProcessPointTimeSeries.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch onBinder"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img src="_static/images/logo_binder.svg">
+  </span>
+<span class="btn__text-container">Binder</span>
+</a>
+</li>
+      
       
       
       
@@ -464,7 +474,7 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "0d54131872444e0ca1b8a40873f95945"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "53d2286b9322412bb9280ddff3affe83"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "2d47e648fb0f452299f2bd373aa61f74"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "07eaa8d0da8d42508452dfd712d548c5"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "b21486ad9ce4457eb15564b209540d7e"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "9e5e238b3d4d4419a98d94a94f522817"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "510e62a72bbb46768138ab9ff501ad29"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "43db53a29e1e497fa4aca7c0bd9430fc"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "8576a74d8cd34fb1b92ec06c265490c9"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "9af53a2413c84893a86e0032e17fe668"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "d287409f3c514e6cbb09619042790112"}</script><script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "b6298ddd3df94f97a5397798e2f1f11f"}</script></div>
 </div>
 </section>
 </section>
@@ -548,7 +558,7 @@ document.write(`
     </style>
     <div>
         <a href="https://bokeh.org" target="_blank" class="bk-notebook-logo"></a>
-        <span id="e7a697f2-c4e4-4eb2-809d-58246dc73e70">Loading BokehJS ...</span>
+        <span id="c189cad6-f2f8-4f72-9d6a-122af4b3b329">Loading BokehJS ...</span>
     </div>
 </div><script type="application/javascript">(function(root) {
   function now() {
@@ -712,7 +722,7 @@ const JS_MIME_TYPE = 'application/javascript';
      "</div>"}};
 
   function display_loaded() {
-    const el = document.getElementById("e7a697f2-c4e4-4eb2-809d-58246dc73e70");
+    const el = document.getElementById("c189cad6-f2f8-4f72-9d6a-122af4b3b329");
     if (el != null) {
       el.textContent = "BokehJS is loading...";
     }
@@ -2206,7 +2216,7 @@ if (force === true) {
       console.log("Bokeh: BokehJS failed to load within specified timeout.");
       root._bokeh_failed_load = true;
     } else if (force !== true) {
-      const cell = $(document.getElementById("e7a697f2-c4e4-4eb2-809d-58246dc73e70")).parents('.cell').data().cell;
+      const cell = $(document.getElementById("c189cad6-f2f8-4f72-9d6a-122af4b3b329")).parents('.cell').data().cell;
       cell.output_area.append_execute_result(NB_LOAD_WARNING)
     }
   }

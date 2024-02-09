@@ -4,9 +4,4 @@
 format: jb-book
 root: intro
 chapters:
-- file: notebooks
-- file: notebooks-TSEBkernel
-- file: pyTSEB_test
-- file: Vector_Spaces
-- file: Vector_Spaces-TSEBkernel
-- file: ProcessLocalImage
+- file: prepareTSEB

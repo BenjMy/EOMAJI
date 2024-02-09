@@ -12,6 +12,11 @@ dependencies:
     - notebook
     - bokeh
     - netCDF4
+    - xarray
+    - rioxarray
+    - geopandas
+    - shapely
+    - contextily
     - pip
     - pip:
         - git+https://github.com/BenjMy/pyTSEB
