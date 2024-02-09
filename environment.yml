@@ -5,6 +5,7 @@ dependencies:
     - python=3
     - gdal
     - numpy
+    - matplotlib
     - scipy
     - pandas
     - jupyter
