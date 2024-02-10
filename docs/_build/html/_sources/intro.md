@@ -1,18 +1,6 @@
 ---
-jupytext:
-  cell_metadata_filter: -all
-  formats: md:myst
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.16.1
-kernelspec:
-  display_name: pyTSEB
-  language: python
-  name: pytseb
-title: Readme
-description: Field site and processing tools description
+title: EO Africa
+description: FEO Africa web
 authors:
   - name: Benjamin Mary
     orcid: 0000-0001-7199-2885
@@ -21,16 +9,14 @@ authors:
     affiliations:
       - ICA-CSIC
 ---
----
 
-# Welcome to your Jupyter Book
+# Home
+The primary objective of this [EO Africa](https://eo4society.esa.int/eo-africa/) Explorers project is to utilize the unique spatial, spectral and temporal characteristics of ECOSTRESS thermal sensor and PRISMA hyperspectral sensor to develop novel methods addressing the growing challenges affecting the nexus of water resource management and food security in Africa. Irrigated agriculture is right in the centre of those two domains and the project monitors irrigation schemes with the aim of inventorying existing perimeters and improving their performance, enhancing the management of water licensing and permits and laying ground for sustainable development of irrigated agriculture in Africa. This will be achieved through development and application of state-of-the-art evapotranspiration modelling making full use of ECOSTRESS and PRISMA data.
 
-This is a small sample book to give you a feel for how book content is
-structured.
-It shows off a few of the major file types, as well as some sample content.
-It does not go in-depth into any particular topic - check out [the Jupyter Book documentation](https://jupyterbook.org) for more information.
+![EO Africa Explorers requirements](images/full_res/EOAFRICA-objective.png "EO Africa Explorers project requirements")
 
-Check out the content pages bundled with this sample book to see more.
-
-```{tableofcontents}
-```
+### Table Of Contents
+- [The Project](project)
+- [Activitites](activities)
+- [The Team](team)
+- [Results](results)

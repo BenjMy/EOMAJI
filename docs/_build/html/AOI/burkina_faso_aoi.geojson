@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"name": "burkina_faso",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+  { "type": "Feature", "properties": {"name": "Kou Valley Irrigation Scheme"},
+    "geometry": { "type": "Polygon", "coordinates": [ [ [-4.45, 11.35 ], [-4.35, 11.35 ], [ -4.35, 11.45 ], [-4.45, 11.45 ], [-4.45, 11.35 ] ] ] } }
+]
+}

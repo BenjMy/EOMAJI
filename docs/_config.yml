@@ -2,8 +2,8 @@
 # Learn more at https://jupyterbook.org/customize/config.html
 
 title: EOMAJI book
-author: B. Mary
-logo: logo.png
+author: H. Nieto; B. Mary
+logo: ./images/EOAFRICA-logo.png
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
@@ -37,4 +37,8 @@ launch_buttons:
   thebe: true
   binderhub_url: "https://mybinder.org"  # The URL for your BinderHub (e.g., https://mybinder.org)
 
-  
+sphinx:
+  config:
+    html_extra_path: ['../data','../lib/']
+    
+    

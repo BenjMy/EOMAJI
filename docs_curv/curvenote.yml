@@ -1,15 +1,16 @@
 version: 1
 site:
-  title: Welcome to Curvenote
+  title: EOMAJI's project
   options:
-    logo_text: Welcome to Curvenote
+    logo_text: EOMAJI
+    logo: ./images/EOAFRICA-logo.png
   nav: []
   actions:
     - title: Learn More
       url: https://curvenote.com/docs/web
   domains: []
 project:
-  title: Welcome to Curvenote
+  title: Home
   description: ''
   short_title: ''
   name: web

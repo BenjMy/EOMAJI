@@ -3,5 +3,17 @@
 
 format: jb-book
 root: intro
-chapters:
-- file: prepareTSEB
+parts:
+ - caption: EOMAJI
+   chapters:
+    - file: project
+    - file: activities
+    - file: team
+ - caption: Results
+   chapters:
+    #- file: results
+    - file: results/2023-03-17-ET-First-validation
+    - file: results/2023-03-17-Crop-Yield-First-Results
+ - caption: Notebooks
+   chapters:
+    - file: prepareTSEB
