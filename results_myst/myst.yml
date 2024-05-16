@@ -1,0 +1,21 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  id: 4472c10d-1d38-479c-8234-660d17b2cc85
+  # title:
+  # description:
+  keywords: []
+  authors: []
+  github: https://github.com/BenjMy/EOMAJI
+  # bibliography: []
+site:
+  template: book-theme
+  # title:
+  # options:
+  #   favicon: favicon.ico
+  #   logo: site_logo.png
+  nav: []
+  actions:
+    - title: Learn More
+      url: https://mystmd.org/guide
+  domains: []
