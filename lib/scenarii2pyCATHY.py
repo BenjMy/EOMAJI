@@ -99,7 +99,7 @@ def set_zone(dem, region_domain, local_domain, sc):
     ax.imshow(zones)
     ax.set_xlabel('x (m)')
     ax.set_ylabel('y (m)')
-    fig.savefig(sc['figpath'] + 'zones.png', dpi=300)
+    fig.savefig(sc['figpath'] /  'zones.png', dpi=300)
     
     return zones
 
@@ -175,11 +175,16 @@ def setup_cathy_simulation(
     
     # define intermediate atmbc irrigation times 
     t_irr = t_atmbc_EO[scenario['irr_time_index']] + scenario['irr_length']
+    t_rain = t_atmbc_EO[scenario['rain_time_index']] + scenario['rain_length']
     
-    t_atmbc_combined = np.concatenate((t_atmbc_EO, [t_irr]))
+    # t_atmbc_combined = np.concatenate((t_atmbc_EO, [t_irr]))
+    t_atmbc_combined = np.concatenate((t_atmbc_EO, [t_irr, t_rain]))
 
     # Sort the combined array
-    t_atmbc = sorted(t_atmbc_combined)
+    t_atmbc = np.sort(t_atmbc_combined)
+    new_irr_index = np.where(t_atmbc==t_irr)[0]
+    new_rain_index = np.where(t_atmbc==t_rain)[0]
+    print('Irrigation time:' + str(t_irr))
 
     # t_atmbc = t_rain + t_irr + t_atmbc_EO
 
@@ -207,19 +212,18 @@ def setup_cathy_simulation(
         v_atmbc_withirr[irr_zone_id] += scenario['irr_flow']
         netValue_tmp = [v_atmbc] * len(t_atmbc)
         netValue = np.copy(netValue_tmp)
-        netValue[scenario['irr_time_index']] = v_atmbc_withirr        
+        netValue[new_irr_index] = v_atmbc_withirr        
     else:
         netValue = [v_atmbc]*len(t_atmbc)
+        netValue = np.vstack(netValue)
+          
+    if 'rain_flow' in scenario.keys():
+        netValue[int(new_rain_index)] =+  scenario['rain_flow']        
        
-    with_rain = False
-    print('!with_rain is not yet implemented!')
-    if with_rain:
-        pass
-        
     simu.update_atmbc(
                       HSPATM=0, # spatially variable atmbc
-                      IETO=0,
-                      time=t_atmbc,
+                      IETO=1,
+                      time=list(t_atmbc),
                       netValue=netValue,
                       # show=True,
                     )
@@ -227,13 +231,13 @@ def setup_cathy_simulation(
 
     simu.update_ic(INDP=0, 
                    IPOND=0,
-                   pressure_head_ini=-30
+                   pressure_head_ini=scenario['pressure_head_ini']
                    )
     
-    simu.update_soil(PMIN=-1e30,
+    simu.update_soil(PMIN=scenario['PMIN'],
                      )
     
-    simu.update_parm(TIMPRTi=t_atmbc,
+    simu.update_parm(TIMPRTi=list(t_atmbc),
                      VTKF=2 # both saturation and pressure head
                      )
     
@@ -242,4 +246,4 @@ def setup_cathy_simulation(
     simu.update_sfbc(time=t_atmbc,no_flow=True)
     
 
-    return simu, netValue
+    return simu, t_irr

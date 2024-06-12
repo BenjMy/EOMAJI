@@ -49,14 +49,14 @@ import pandas as pd
 plt.close('all')
 
 from pathlib import Path
-
+import xarray as xr
 
 #%%
-scenario_nb = 0
+scenario_nb = 1
 sc = load_scenario(scenario_nb)
 
 #%% Paths
-prj_name = 'test_EOMAJI'
+prj_name = 'EOMAJI_' + str(scenario_nb)
 # figpath = os.path.join('../figures/',prj_name)
 figpath = Path('../figures/scenario' + str(scenario_nb))
 
@@ -65,7 +65,7 @@ figpath.mkdir(parents=True, exist_ok=True)
 sc['figpath'] = figpath
 #%% Simulate with irrigation atmospheric boundary conditions
 # ----------------------------------------------------------
-simu_with_IRR, _ = scenarii2pyCATHY.setup_cathy_simulation(
+simu_with_IRR, t_irr = scenarii2pyCATHY.setup_cathy_simulation(
                                             prj_name=prj_name,
                                             scenario=sc,
                                             # ETp = ETp,
@@ -107,13 +107,24 @@ out_with_IRR = utils.read_outputs(simu_with_IRR)
 out_baseline = utils.read_outputs(simu_baseline)
 
 
-
 #%% 
 
 ETp = np.ones(np.shape(simu_with_IRR.DEM))*sc['ETp']
 fig, ax = plt.subplots()
 ax.imshow(ETp)
 
+
+ds_analysis_EO = utils.get_analysis_ds(out_with_IRR['ETa'])
+ds_analysis_baseline = utils.get_analysis_ds(out_baseline['ETa'])
+
+ds_analysis_EO = utils.add_ETp2ds(ETp,ds_analysis_EO)
+ds_analysis_baseline = utils.add_ETp2ds(ETp,ds_analysis_baseline)
+
+ds_analysis_EO['ETp'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+plt.savefig(os.path.join(figpath,'ETp_spatial_plot.png'))
+
+ds_analysis_baseline['ETp'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+plt.savefig(os.path.join(figpath,'ETp_baseline_spatial_plot.png'))
 
 
 #%% Plot evolution of ETa, SW and PSI INSIDE and OUTSIDE of the irrigation area 
@@ -139,7 +150,9 @@ utils.plot_1d_evol(
                     out_with_IRR,
                     out_baseline,
                     np.mean(ETp),
-                    axs
+                    axs,
+                    scenario=sc,
+                    timeIrr_sec = t_irr,
                 )
 axs[0].set_title('WITHIN Irrigation Area')
 fig.savefig(os.path.join(figpath,
@@ -157,7 +170,7 @@ utils.plot_1d_evol(
                     out_with_IRR,
                     out_baseline,
                     np.mean(ETp),
-                    axs
+                    axs,
                 )
 axs[0].set_title('OUTSIDE Irrigation Area')
 fig.savefig(os.path.join(figpath,
@@ -171,100 +184,238 @@ fig.savefig(os.path.join(figpath,
 #                             'vtk'
 #                             )
 # utils.plot_3d_SatPre(path_results_withIRR)
-       
-#%% Plot actual ET with time
 
-ET_from_EO_multiindex = out_with_IRR['ETa'].reset_index()
-ET_from_EO_multiindex = ET_from_EO_multiindex.set_index(['time', 'X', 'Y'])
-ET_from_EO_xr = ET_from_EO_multiindex.to_xarray()
-ET_from_EO_xr['ACT. ETRA'].plot.imshow(x="X", y="Y", col="time", col_wrap=3)
-plt.savefig(os.path.join(figpath,'ETa_withIRR_spatial_plot.png'))
+
 
 
 #%% Find the time when the irrigation is triggered 
 # create the ratio between ETa and ETp
-np.shape(out_with_IRR['ETa']['ACT. ETRA'])
+# np.shape(out_with_IRR['ETa']['ACT. ETRA'])
 
-
-
-# Raster zones to nodes
-# ----------------------------------------------------------------------
-pad_width = ((0, 1), (0, 1))  # Padding only the left and top
-padded_ETp = np.pad(ETp, 
-                       pad_width, 
-                       mode='constant', 
-                       constant_values=ETp.mean()
-                       )    
 
 #%% Create an xarray dataset with all the necessery variables ETp, ETa, ...
 
-xr_analysis = ET_from_EO_xr.copy()
-xr_analysis["ETp"] = (("time", "X", "Y"), [padded_ETp]*len(xr_analysis.time))
-xr_analysis["ratio_ETalocal_ETplocal"] = xr_analysis["ACT. ETRA"]/xr_analysis["ETp"]
+# xr_analysis = ET_from_EO_xr.copy()
+# xr_analysis["ETp"] = (("time", "X", "Y"), [padded_ETp]*len(xr_analysis.time))
 
-xr_analysis['ratio_ETalocal_ETplocal'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+# Compute local ratio to check: 
+# a) There is no input of water into the soil (e.g. local ETa/p does not increase above a threshold)
+
+
+ds_analysis_EO = utils.compute_ratio_ETap_local(ds_analysis_EO)
+ds_analysis_baseline = utils.compute_ratio_ETap_local(ds_analysis_baseline)
+
+
+ds_analysis_EO['ratio_ETap_local'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
 plt.savefig(os.path.join(figpath,'ratioETap_withIRR_spatial_plot.png'))
 
-#%%
-# Define the window size for rolling mean
-# window_size_x = 4
-# window_size_y = 4
-# Compute the rolling mean on X and Y dimensions for the ETp variable
-rolling_mean_ETp = xr_analysis['ETp'].rolling(X=sc['window_size_x'], 
-                                           Y=sc['window_size_y']).mean()
-xr_analysis['ETp_rolling_mean'] = rolling_mean_ETp
-
-xr_analysis["ratio_ETalocal_ETp_rollingmean"] = xr_analysis["ACT. ETRA"]/xr_analysis["ETp_rolling_mean"]
-xr_analysis['ratio_ETalocal_ETp_rollingmean'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
-
-# ET_2test.rolling(time=3).mean()
-
-
-#%%
-
-
-
-ratio_ETap = out_with_IRR['ETa'].copy()
-ratio_ETap['ratioETap'] = (out_with_IRR['ETa']['ACT. ETRA']/ETp)
-ratio_ETap['threshold'] = False
-ratio_ETap.loc[abs(ratio_ETap['ratioETap']) < 0.6, 'threshold'] = True
-
-
-fig, axs = plt.subplots(2,1, sharex=True)
-# plot and detect when irrigation has been trigerred
-ratio_ETap.groupby('time').max().plot(y='ratioETap',ax=axs[0])
-axs[0].axhline(y= -0.6, 
-               color='k', 
-               linestyle='--', 
-               label='Threshold0.6'
-               )
-
-
-ratio_ETap['threshold_numeric'] = ratio_ETap['threshold'].astype(int)
-
-# Plot threshold on the second subplot
-# Since 'threshold' is boolean, we'll use a step plot to represent it
-ratio_ETap.groupby('time').max().plot(y='threshold_numeric', 
-                                      ax=axs[1], 
-                                      drawstyle='steps-post', 
-                                      marker='s'
-                                      )
-
-axs[0].set_ylabel('ETa/ETp (m/s)')
-axs[0].set_xlabel('')
-axs[1].yaxis.set_ticklabels(['True', 'False'])
-fig.savefig(os.path.join(figpath,'Irrigation detection.png'))
+ds_analysis_baseline['ratio_ETap_local'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+plt.savefig(os.path.join(figpath,'ratioETap_baseline_spatial_plot.png'))
 
 
 #%% 
+
+
+ds_analysis_EO = utils.compute_regional_ETap(ds_analysis_EO,
+                                       window_size_x=sc['ETp_window_size_x']
+                                       )
+ds_analysis_baseline = utils.compute_regional_ETap(ds_analysis_baseline,
+                                             window_size_x=sc['ETp_window_size_x']
+                                             )
+
+
+
+    
+ds_analysis_EO = utils.compute_ratio_ETap_regional(ds_analysis_EO)
+ds_analysis_baseline = utils.compute_ratio_ETap_regional(ds_analysis_baseline)
+
+
+
+ds_analysis_EO['ratio_ETap_rolling_regional'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+plt.savefig(os.path.join(figpath,'ratioETap_regional_withIRR_spatial_plot.png'))
+
+ds_analysis_baseline['ratio_ETap_rolling_regional'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+plt.savefig(os.path.join(figpath,'ratioETap_regional_baseline_spatial_plot.png'))
+
+
+
+    
+#%%
+# a) There is no input of water into the soil (e.g. local ETa/p does not increase above a threshold)
+
+
+# ds_analysis_EO
+# def compute_ratio_ETap_regional(ds_analysis):
+#     ds_analysis["ratio_ETap_rolling_regional"] = ds_analysis['ACT. ETRA_rolling_mean']/ds_analysis["ETp_rolling_mean"]
+#     return ds_analysis
+
+
+# ds_analysis_EO['ratio_ETap_local'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+
+ 
+ds_analysis_EO = utils.compute_threshold_decision_local(ds_analysis_EO,
+                                                        threshold=sc['threshold_localETap']
+                                                        # threshold=0.1
+                                                        )
+
+ds_analysis_EO = utils.compute_threshold_decision_regional(ds_analysis_EO,
+                                                        threshold=sc['threshold_regionalETap']
+                                                        )
+
+# ds_analysis_EO['threshold_numeric'] = ds_analysis_EO['threshold'].astype(int)
+# ds_analysis_EO['threshold_local'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+# ds_analysis_EO['ratio_ETap_local'].plot.imshow(x="X", y="Y", col="time", col_wrap=4)
+
+
+event_type = xr.DataArray(0, 
+                          coords=ds_analysis_EO.coords, 
+                          dims=ds_analysis_EO.dims
+                          )
+
+condRain1 = ds_analysis_EO['threshold_regional']==True
+condRain2 = ds_analysis_EO['ratio_ETap_rolling_regional'] >= ds_analysis_EO['ratio_ETap_local']
+condRain = condRain1 & condRain2
+event_type = event_type.where(~condRain, 1)
+
+condIrrigation1 = ds_analysis_EO['threshold_local']==True
+np.sum(condIrrigation1)
+condIrrigation2 = ds_analysis_EO['ratio_ETap_local'] > 1.5*ds_analysis_EO['ratio_ETap_rolling_regional']
+condIrrigation = condIrrigation1 & condIrrigation2
+
+event_type = event_type.where(~condIrrigation, 2)
+
+#%%
+mapping = {'rain': 2, 'irrigation': 1, 'No input': 0}
+# Custom colormap with discrete colors
+# Custom colormap with discrete colors
+cmap = plt.cm.colors.ListedColormap(['white', 'blue', 'red'])
+
+# Plot using imshow with the custom colormap
+plot = event_type.plot.imshow(x="X", y="Y", col="time", col_wrap=4, cmap=cmap)
+
+# Get the current axes
+ax = plt.gca()
+
+# Create a colorbar with ticks and labels corresponding to mapping
+cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap), ax=ax, ticks=[mapping['No input'], mapping['irrigation'], mapping['rain']])
+cbar.ax.set_yticklabels(['No input', 'irrigation', 'rain'])
+
+plt.show()
+
+
+#%%
+# Custom colormap with white, blue, and red
+cmap = plt.cm.colors.ListedColormap(['white', 'blue', 'red'])
+
+# Create subplots for each time slice
+fig, axs = plt.subplots(nrows=int(event_type.shape[0]/4), ncols=4, figsize=(8, 6),
+                        sharex=True,
+                        sharey=True)
+
+
+time_values = event_type.time.values
+
+# Calculate elapsed days and hours
+elapsed_days = (time_values / np.timedelta64(1, 'D')).astype(int)
+remaining_hours = ((time_values % np.timedelta64(1, 'D')) / np.timedelta64(1, 'h')).astype(int)
+
+# Combine elapsed days and hours into a list
+time_list = [f"{day} days, {hour} hours" for day, hour in zip(elapsed_days, remaining_hours)]
+
+
+axs = axs.ravel()
+for i, ax in enumerate(axs):
+    # Plot each time slice using imshow
+    ax.imshow(event_type[i].values, cmap=cmap)
+    ax.set_title(f'{time_list[i]}',fontsize=6)
+    if i == len(axs)-1:
+        ax.set_xlabel('x [m]')
+        ax.set_xlabel('y [m]')
+
+    # ax.set_yticks([])
+
+# Position the colorbar to the right of the subplots
+cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # Adjust the position and size as needed
+# cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap), 
+#                     cax=cbar_ax, 
+#                     ticks=[mapping['No input'], 
+#                            mapping['rain'], 
+#                            mapping['irrigation']
+#                            ]
+#                     )
+cbar = plt.colorbar(plt.cm.ScalarMappable(cmap=cmap), 
+                    cax=cbar_ax, 
+                    ticks=[0,1,2]
+                    )
+cbar.ax.set_yticklabels(['No input', 'irrigation', 'rain'])
+
+# plt.tight_layout()
+plt.show()
+    
+
+
+
+
+# if 
+
+
+# ds_analysis["threshold"] = (("time", "X", "Y"),
+#                             np.ones(np.shape(ds_analysis['index']))*False
+#                             )
+
+
+# threshold3D = np.ones(np.shape(ds_analysis_EO['index']))*False
+# dims = ('time', 'X', 'Y')
+# threshold_xr = xr.DataArray(threshold3D, dims=dims)
+# ds_analysis_EO['threshold'] = threshold_xr
+# ds_analysis_EO.loc[abs(ds_analysis_EO['ratio_ETap_local']) < 0.6, 'threshold'] = True
+# ds_analysis_EO['threshold_numeric'] = ds_analysis_EO['threshold'].astype(int)
+
+
+#%% 
+def compare_local_regional_ratios(ds_analysis):
+    pass
 # differenciation between rain and irrigation events
 # --------------------------------------------------
 # compute local vs regional ETa/ETp
 
-ET_from_EO_xr.rolling(time=3).mean()
+def compute_rolling_time_mean(ds_analysis):
+    ds_analysis.rolling(time=3).mean()
+    return ds_analysis
 
 #Since irrigation is normally applied on a larger area, 
 # the raster map with per-pixel irrigation events 
 # is cleaned up by removing isolated pixels in which irrigation was detected.
+
+
+
+
+# fig, axs = plt.subplots(2,1, sharex=True)
+# # plot and detect when irrigation has been trigerred
+# xr_analysis.groupby('time').max().plot(y='ratio_ETap_local',ax=axs[0])
+# axs[0].axhline(y= -0.6, 
+#                color='k', 
+#                linestyle='--', 
+#                label='Threshold0.6'
+#                )
+
+
+# Plot threshold on the second subplot
+# Since 'threshold' is boolean, we'll use a step plot to represent it
+# xr_analysis.groupby('time').max().plot(y='threshold_numeric', 
+#                                       ax=axs[1], 
+#                                       drawstyle='steps-post', 
+#                                       marker='s'
+#                                       )
+
+# axs[0].set_ylabel('ETa/ETp (m/s)')
+# axs[0].set_xlabel('')
+# axs[1].yaxis.set_ticklabels(['True', 'False'])
+# fig.savefig(os.path.join(figpath,'Irrigation detection.png'))
+
+
+#%%
+
+
 
 

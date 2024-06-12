@@ -1,6 +1,8 @@
 def load_scenario(idnb):
     if idnb==0:
         sc = load_s0()
+    if idnb==1:
+        sc = load_s1()
     return sc 
 
 
@@ -13,12 +15,14 @@ nb_hours_ET = 8 # nb of hours with ET
 # IRRIGATION PARAMETERS
 # ---------------------
 irr_time_index = 3
-irr_flow = 5e-7 #m/s
-irr_length = 6*60*60 # irrigation length in sec
+irr_flow = 3e-7 #m/s
+irr_length = 3*60*60 # irrigation length in sec
 
 # RAIN PARAMETERS
 # ---------------------
-
+rain_flow = 5e-7 #m/s
+rain_time_index = 6
+rain_length = 6*60*60 # irrigation length in sec
 
 # EARTH OBSERVATIONS PARM
 # -----------------------
@@ -31,11 +35,23 @@ ETp_window_size_x = 10 # size of the window in pixels to compute the rolling mea
 # The resolution of one pixel is about 10m? (depending on the hydrological mesh build step) 
 
 
+# SOIL PARAMETERS
+# ---------------
+PMIN = -1e30
+pressure_head_ini = -200
+
+threshold_localETap = 0.3
+threshold_regionalETap = 0.3
 
 def load_s0():
     
     scenario = {
         
+                # SOIL PARAMETERS
+                # ---------------
+                'PMIN': PMIN,
+                'pressure_head_ini': pressure_head_ini,
+
                 # ETP PARAMETERS
                 # ---------------------
                 'ETp': ETp,
@@ -56,11 +72,24 @@ def load_s0():
                 # --------------------------------
                 'ETp_window_size_x': ETp_window_size_x,
                 'ETp_window_size_y': ETp_window_size_x,
+                
+                # THRESHOLD
+                # ---------
+                'threshold_localETap': threshold_localETap,
+                'threshold_regionalETap': threshold_regionalETap,
 
         
         }
     return scenario
         
+def load_s1():
     
+    scenario = load_s0()
+    
+    scenario['rain_flow'] = rain_flow
+    scenario['rain_time_index'] = rain_time_index
+    scenario['rain_length'] = rain_length
+    return scenario
+        
 
 
