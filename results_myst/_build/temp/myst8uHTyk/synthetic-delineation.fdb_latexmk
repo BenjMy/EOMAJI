@@ -1,0 +1,29 @@
+# Fdb version 4
+["xdvipdfmx"] 0 "synthetic-delineation.xdv" "synthetic-delineation.pdf" "synthetic-delineation" 0 -1
+  "synthetic-delineation.xdv" 0 -1 0 "xelatex"
+  (generated)
+  "synthetic-delineation.pdf"
+  (rewritten before read)
+["xelatex"] 1721036237.6883 "synthetic-delineation.tex" "synthetic-delineation.xdv" "synthetic-delineation" 1721036237.79427 2
+  "/home/z0272571a@CAMPUS.CSIC.ES/.texlive2020/texmf-var/web2c/xetex/xelatex.fmt" 1719584206.75199 3575760 bafde8df96c140518ac70fd70c3172d1 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/base/article.cls" 1687470161 20145 aad8c3dd3bc36e260347b84002182bc2 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty" 1687470161 5050 0d3b77275060ca09a40635b830c3c904 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo" 1687470161 8449 a72d5d4e612221b46000c3d71724e0ef ""
+  "/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg" 1687470161 1224 978390e9c2234eab29404bc21b268d1e ""
+  "/usr/share/texlive/texmf-dist/tex/latex/graphics-def/xetex.def" 1687470161 12738 d0a2a642f6c5f6c5f6259a253237e67f ""
+  "/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty" 1687470161 18272 a8c6a275b34ab6717ceeb8fa04b104e2 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty" 1687470161 7919 20fdfdd783821971c55bc8ee918cbe63 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty" 1687470161 2590 e3b24ff953e5b58d924f163d25380312 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty" 1687470161 3976 d7fa7d81d2870d509d25b17d0245e735 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/url/url.sty" 1687470161 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/xcolor/xcolor.sty" 1687470161 55589 34128738f682d033422ca125f82e5d62 ""
+  "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1687470165 39615 4ca7b2be4e89b50848d4f0b4d97130bb ""
+  "adjustbox.sty" 0 -1 0 ""
+  "curvenote.def" 1721036237.63614 1255 fb648ac581074287f78535fd6b596ed0 ""
+  "synthetic-delineation.aux" 1721036237.68714 32 3985256e7290058c681f74d7a3565a19 "xelatex"
+  "synthetic-delineation.tex" 1721036237.63614 3232 fe7cb8568f355fa21064e75f376bc820 ""
+  (generated)
+  "synthetic-delineation.aux"
+  "synthetic-delineation.log"
+  "synthetic-delineation.xdv"
+  (rewritten before read)

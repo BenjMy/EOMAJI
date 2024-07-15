@@ -1,0 +1,32 @@
+Rc files read:
+  /etc/latexmkrc
+Latexmk: This is Latexmk, John Collins, 7 Apr. 2024. Version 4.85.
+No existing .aux file, so I'll make a simple one, and require run of *latex.
+Latexmk: applying rule 'xelatex'...
+Rule 'xelatex':  Reasons for rerun
+Category 'other':
+  Rerun of 'xelatex' forced or previously required:
+    Reason or flag: 'Initial setup'
+
+------------
+Run number 1 of rule 'xelatex'
+------------
+------------
+Running 'xelatex -no-pdf -synctex=1 -interaction=batchmode -file-line-error -shell-escape -recorder  "results-sc1.tex"'
+------------
+This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020) (preloaded format=xelatex)
+ \write18 enabled.
+entering extended mode
+Latexmk: Missing input file 'doi.sty' (or dependence on it) from following:
+  ! LaTeX Error: File `doi.sty' not found.
+Failure to make 'results-sc1.xdv'
+Latexmk: Getting log file 'results-sc1.log'
+Latexmk: Examining 'results-sc1.fls'
+Latexmk: Examining 'results-sc1.log'
+Latexmk: Log file says no output from latex
+Latexmk: For rule 'xelatex', no output was made
+Latexmk: Errors, in force_mode: so I tried finishing targets
+Collected error summary (may duplicate other messages):
+  xelatex: Command for 'xelatex' gave return code 1
+      Refer to 'results-sc1.log' and/or above output for details
+

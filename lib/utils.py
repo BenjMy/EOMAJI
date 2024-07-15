@@ -194,7 +194,17 @@ def plot_in_subplot(ax,
 def seconds_to_days(seconds):
     return seconds / 86400
 
-def plot_1d_evol(simu,index,closest,
+
+# def find_irr_surface_node(index,out_with_IRR,out_baseline):
+    
+#     ETa1d_index = np.where(out_with_IRR['ETa']['SURFACE NODE']==index[0])[0]
+#     ETa1d_with_IRR = out_with_IRR['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
+#     ETa1d_baseline = out_baseline['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
+    
+#     return ETa1d_index, ETa1d_with_IRR, ETa1d_baseline
+    
+def plot_1d_evol(simu,
+                 index,
                  out_with_IRR,
                  out_baseline,
                  ETp,
@@ -231,6 +241,11 @@ def plot_1d_evol(simu,index,closest,
                             out_baseline,
                             prop='psi',
                             )
+    
+    # ETa1d_index, ETa1d_with_IRR, ETa1d_baseline = find_irr_surface_node(index,
+    #                                                               out_with_IRR,
+    #                                                               out_baseline
+    #                                                               )
     
     ETa1d_index = np.where(out_with_IRR['ETa']['SURFACE NODE']==index[0])[0]
     ETa1d_with_IRR = out_with_IRR['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
@@ -283,3 +298,14 @@ def plot_1d_evol(simu,index,closest,
     axs[-1].set_xlabel('Time (days)')
     
     
+ 
+def set_index_IN_OUT_irr_area(simu,maxDEM=1):
+    index_irrArea, coords_IN_irrArea = simu.find_nearest_node([500,
+                                                 500,
+                                                 maxDEM]
+                                                )
+    index_out_irrArea, coords_OUT_irrArea = simu.find_nearest_node([10,
+                                                 10,
+                                                 maxDEM]
+                                                )
+    return index_irrArea, index_out_irrArea

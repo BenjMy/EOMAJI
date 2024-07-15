@@ -1,0 +1,102 @@
+Rc files read:
+  /etc/latexmkrc
+Latexmk: This is Latexmk, John Collins, 7 Apr. 2024. Version 4.85.
+No existing .aux file, so I'll make a simple one, and require run of *latex.
+Latexmk: applying rule 'xelatex'...
+Rule 'xelatex':  Reasons for rerun
+Category 'other':
+  Rerun of 'xelatex' forced or previously required:
+    Reason or flag: 'Initial setup'
+
+------------
+Run number 1 of rule 'xelatex'
+------------
+------------
+Running 'xelatex -no-pdf -synctex=1 -interaction=batchmode -file-line-error -shell-escape -recorder  "results-sc1.tex"'
+------------
+This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020) (preloaded format=xelatex)
+ \write18 enabled.
+entering extended mode
+
+SyncTeX written on results-sc1.synctex.gz.Latexmk: Missing input file 'files/vtksaturation-6351a4b146f09c4ae6b6fcd05adccf86.gif' (or dependence on it) from following:
+  LaTeX Warning: File `files/vtksaturation-6351a4b146f09c4ae6b6fcd05adccf86.gif' not found on input line 74.
+Latexmk: Missing input file '../figures/scenario1/netIrr_spatial_plot.png' (or dependence on it) from following:
+  LaTeX Warning: File `../figures/scenario1/netIrr_spatial_plot.png' not found on
+Latexmk: Missing input file '../figures/scenario1/netIrr_spatial_plot.png' (or dependence on it) from following:
+  LaTeX Warning: File `../figures/scenario1/netIrr_spatial_plot.png' not found on input line 100.
+Latexmk: Missing input file '../figures/scenario1/netIrr_sumsum_spatial_plot.png' (or dependence on it) from following:
+  LaTeX Warning: File `../figures/scenario1/netIrr_sumsum_spatial_plot.png' not found on input line 106.
+Latexmk: Getting log file 'results-sc1.log'
+Latexmk: Examining 'results-sc1.fls'
+Latexmk: Examining 'results-sc1.log'
+Latexmk: References changed.
+Latexmk: References changed.
+Latexmk: Log file says output to 'results-sc1.xdv'
+Latexmk: applying rule 'xelatex'...
+Rule 'xelatex':  Reasons for rerun
+Changed files or newly in use/created:
+  results-sc1.aux
+  results-sc1.out
+
+------------
+Run number 2 of rule 'xelatex'
+------------
+------------
+Running 'xelatex -no-pdf -synctex=1 -interaction=batchmode -file-line-error -shell-escape -recorder  "results-sc1.tex"'
+------------
+This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020) (preloaded format=xelatex)
+ \write18 enabled.
+entering extended mode
+
+SyncTeX written on results-sc1.synctex.gz.Latexmk: Missing input file 'files/vtksaturation-6351a4b146f09c4ae6b6fcd05adccf86.gif' (or dependence on it) from following:
+  LaTeX Warning: File `files/vtksaturation-6351a4b146f09c4ae6b6fcd05adccf86.gif' not found on input line 74.
+Latexmk: Missing input file '../figures/scenario1/netIrr_spatial_plot.png' (or dependence on it) from following:
+  LaTeX Warning: File `../figures/scenario1/netIrr_spatial_plot.png' not found on
+Latexmk: Missing input file '../figures/scenario1/netIrr_spatial_plot.png' (or dependence on it) from following:
+  LaTeX Warning: File `../figures/scenario1/netIrr_spatial_plot.png' not found on input line 100.
+Latexmk: Missing input file '../figures/scenario1/netIrr_sumsum_spatial_plot.png' (or dependence on it) from following:
+  LaTeX Warning: File `../figures/scenario1/netIrr_sumsum_spatial_plot.png' not found on input line 106.
+Latexmk: Getting log file 'results-sc1.log'
+Latexmk: Examining 'results-sc1.fls'
+Latexmk: Examining 'results-sc1.log'
+Latexmk: Log file says output to 'results-sc1.xdv'
+Latexmk: applying rule 'xdvipdfmx'...
+Rule 'xdvipdfmx':  Reasons for rerun
+Changed files or newly in use/created:
+  results-sc1.xdv
+Category 'changed_source_rules':
+  xelatex
+Category 'no_dest':
+  xdvipdfmx
+
+------------
+Run number 1 of rule 'xdvipdfmx'
+------------
+------------
+Running 'xdvipdfmx -E -o "results-sc1.pdf"  "results-sc1.xdv"'
+------------
+results-sc1.xdv -> results-sc1.pdf
+[1][2
+xdvipdfmx:warning: Object @figure.1 already defined.
+][3Error: /undefined in GIF89a
+Operand stack:
+
+Execution stack:
+   %interp_exit   .runexec2   --nostringval--   --nostringval--   --nostringval--   2   %stopped_push   --nostringval--   --nostringval--   --nostringval--   false   1   %stopped_push   1974   1   3   %oparray_pop   1973   1   3   %oparray_pop   1961   1   3   %oparray_pop   1817   1   3   %oparray_pop   --nostringval--   %errorexec_pop   .runexec2   --nostringval--   --nostringval--   --nostringval--   2   %stopped_push   --nostringval--
+Dictionary stack:
+   --dict:765/1123(ro)(G)--   --dict:0/20(G)--   --dict:75/200(L)--
+Current allocation mode is local
+Current file position is 7
+GPL Ghostscript 9.54.0: Unrecoverable error, exit code 1
+
+xdvipdfmx:warning: Filtering file via command -->rungs -q -dALLOWPSTRANSPARENCY -dDELAYSAFER -dNOPAUSE -dBATCH -dEPSCrop -sPAPERSIZE=a0 -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 -dAutoFilterGrayImages=false -dGrayImageFilter=/FlateEncode -dAutoFilterColorImages=false -dColorImageFilter=/FlateEncode -dAutoRotatePages=/None -sOutputFile='/tmp/dvipdfm-x.127606cc51038e6c15a336a4cd825d23' './files/vtksaturation-6351a4b146f09c4ae6b6fcd05adccf86.gif' -c quit<-- failed.
+xdvipdfmx:warning: Image format conversion for "./files/vtksaturation-6351a4b146f09c4ae6b6fcd05adccf86.gif" failed...
+xdvipdfmx:fatal: pdf_ref_obj(): passed invalid object.
+
+No output PDF file written.
+Latexmk: Errors, in force_mode: so I tried finishing targets
+Collected error summary (may duplicate other messages):
+  xdvipdfmx: Command for 'xdvipdfmx' gave return code 256
+  xelatex: Command for 'xelatex' gave return code 1
+      Refer to 'results-sc1.log' and/or above output for details
+

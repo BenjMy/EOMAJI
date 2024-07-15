@@ -1,0 +1,99 @@
+% Created with jtex v.1.0.17
+\documentclass{article}
+\PassOptionsToPackage{short, nodayofweek}{datetime}
+
+\input{curvenote.def}
+
+
+
+% colors for hyperlinks
+\hypersetup{colorlinks=true, allcolors=blue}
+\hypersetup{
+pdftitle={\@title},
+pdfsubject={},
+pdfauthor={\@author},
+pdfkeywords={},
+addtopdfcreator={Written in Curvenote}
+}
+
+\usepackage{curvenote}
+
+\title{Synthetic irrigation model}
+
+\newdate{articleDate}{21}{4}{2024}
+\date{\displaydate{articleDate}}
+
+\author{\bfseries Hector Nieto\mdseries\\ICA-CSIC\\\AND\bfseries Benjamin Mary\mdseries\\ICA-CSIC\\\AND\bfseries Vicente Burchard-Levine\mdseries\\ICA-CSIC\\}
+
+\begin{document}
+
+\maketitle
+\keywords{DA}
+
+\section{Abstract}
+
+\begin{itemize}
+\item \textbf{Baseline ET} = ET without irrigation scheme from a land-surface hydrogeological model
+\end{itemize}
+
+\section{Background and objectives}
+
+In this study, to compute the \textbf{baseline ET} (ET without irrigation scheme), we use the CATHY code (Catchment Hydrology, Camporese et al., 2010) for modeling soil surface-subsurface water flow. We conducted experiments involving synthetic scenarios to assess their detectability with:
+
+\begin{itemize}
+\item varying sizes and levels of irrigation
+\item different frequencies of evapotranspiration (EO)
+\item atmospheric boundary conditions, including rain events occurring between irrigation cycles.
+\end{itemize}
+
+\section{Description of the synthetic models}
+
+\subsection{Hydrological model inputs}
+
+The \textbf{regional domain size} is 100x100m square, flat. \textbf{Irrigation local size} is a 30x30m square centered on the regional domain.
+The vegetation is uniform on all the regional domain size, with \textbf{root depth} of 1m typical from herbaceous crop.
+The soil is homogeneous all over the regional domain.
+
+The irrigation consist in a single event at ?? sec (day ??).
+The irrigation rate is \textbf{5e-07} m/s during \textbf{21600} sec. This is equivalent to 43.2 mm/day during 6hours.
+
+The \textbf{potential ETp} is homogeneous all over the domain and with time, set to -1e-07 m/s.
+
+\textbf{At time 0}, the soil is dry with an initial pressure head of -30m that is equivalent to a saturation level of 0.3?.
+
+\textbf{No flow} boundary conditions are imposed outside the regional domain.
+
+\subsection{Earth observations}
+
+Earth Observations are available at a \textbf{daily frequency}. To mimick EO we used a hydrological model including the irrigation.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.75\linewidth]{files/EOMAJI_mesh-509781dd4b086cb32383299dabc9f88d.png}
+\caption*{EO-MAJI-IrrDelineation}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.75\linewidth]{files/vtksaturation-6351a4b146f09c4ae6b6fcd05adccf86.gif}
+\caption*{Saturation over the course of the irrigation}
+\end{figure}
+
+\bigskip\noindent
+\begin{tabular}{p{\dimexpr 0.333\linewidth-2\tabcolsep}p{\dimexpr 0.333\linewidth-2\tabcolsep}p{\dimexpr 0.333\linewidth-2\tabcolsep}}
+\toprule
+Key & S0 & S1 \\
+\hline
+ETp & -1e-07 &  \\
+nb\_days & 10 &  \\
+nb\_hours\_ET & 8 &  \\
+irr\_time\_index & 3 &  \\
+irr\_length & 21600 &  \\
+irr\_flow & 5e-07 &  \\
+EO\_freq\_days & 1 &  \\
+ETp\_window\_size\_x & 10 &  \\
+\bottomrule
+\end{tabular}
+
+\bigskip
+\end{document}

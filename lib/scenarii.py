@@ -3,18 +3,20 @@ def load_scenario(idnb):
         sc = load_s0()
     if idnb==1:
         sc = load_s1()
+    if idnb==2:
+        sc = load_s2()
     return sc 
 
 
 # ETP PARAMETERS
 # ---------------------
-ETp = -1e-7 # in m/s
+CONSTANT_ETp = -1e-7 # in m/s
 nb_days = 10 # simulation duration in days
 nb_hours_ET = 8 # nb of hours with ET
 
 # IRRIGATION PARAMETERS
 # ---------------------
-irr_time_index = 3
+irr_time_index = 3  #(= day nb)
 irr_flow = 3e-7 #m/s
 irr_length = 3*60*60 # irrigation length in sec
 
@@ -54,12 +56,13 @@ def load_s0():
 
                 # ETP PARAMETERS
                 # ---------------------
-                'ETp': ETp,
+                'ETp': CONSTANT_ETp,
                 'nb_days': nb_days,
                 'nb_hours_ET': nb_hours_ET,
                 
                 # IRRIGATION PARAMETERS
                 # ---------------------
+                'nb_irr_zones':1,
                 'irr_time_index': irr_time_index,
                 'irr_length': irr_length,
                 'irr_flow': irr_flow,
@@ -89,6 +92,26 @@ def load_s1():
     scenario['rain_flow'] = rain_flow
     scenario['rain_time_index'] = rain_time_index
     scenario['rain_length'] = rain_length
+    return scenario
+        
+        
+def load_s2():
+    
+    scenario = load_s0()
+    
+    # IRRIGATION PARAMETERS
+    # ---------------------
+    scenario_change = {
+                'nb_irr_zones':2,
+                'irr_time_index': [3,4],
+                'irr_length': [irr_length,irr_length],
+                'irr_flow': [irr_flow,irr_flow],
+                'irr_center_point_x': [300,500], # in m
+                'irr_center_point_y': [500,500], # in m
+                'irr_square_size': [30,100],
+    }
+    
+    scenario = scenario | scenario_change      
     return scenario
         
 

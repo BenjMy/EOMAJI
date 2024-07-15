@@ -1,0 +1,66 @@
+Rc files read:
+  /etc/latexmkrc
+Latexmk: This is Latexmk, John Collins, 7 Apr. 2024. Version 4.85.
+No existing .aux file, so I'll make a simple one, and require run of *latex.
+Latexmk: applying rule 'xelatex'...
+Rule 'xelatex':  Reasons for rerun
+Category 'other':
+  Rerun of 'xelatex' forced or previously required:
+    Reason or flag: 'Initial setup'
+
+------------
+Run number 1 of rule 'xelatex'
+------------
+------------
+Running 'xelatex -no-pdf -synctex=1 -interaction=batchmode -file-line-error -shell-escape -recorder  "z-synthetic-da.tex"'
+------------
+This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020) (preloaded format=xelatex)
+ \write18 enabled.
+entering extended mode
+
+SyncTeX written on z-synthetic-da.synctex.gz.Latexmk: Getting log file 'z-synthetic-da.log'
+Latexmk: Examining 'z-synthetic-da.fls'
+Latexmk: Examining 'z-synthetic-da.log'
+Latexmk: References changed.
+Latexmk: References changed.
+Latexmk: Log file says output to 'z-synthetic-da.xdv'
+Latexmk: applying rule 'xelatex'...
+Rule 'xelatex':  Reasons for rerun
+Changed files or newly in use/created:
+  z-synthetic-da.aux
+  z-synthetic-da.out
+
+------------
+Run number 2 of rule 'xelatex'
+------------
+------------
+Running 'xelatex -no-pdf -synctex=1 -interaction=batchmode -file-line-error -shell-escape -recorder  "z-synthetic-da.tex"'
+------------
+This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020) (preloaded format=xelatex)
+ \write18 enabled.
+entering extended mode
+
+SyncTeX written on z-synthetic-da.synctex.gz.Latexmk: Getting log file 'z-synthetic-da.log'
+Latexmk: Examining 'z-synthetic-da.fls'
+Latexmk: Examining 'z-synthetic-da.log'
+Latexmk: Log file says output to 'z-synthetic-da.xdv'
+Latexmk: applying rule 'xdvipdfmx'...
+Rule 'xdvipdfmx':  Reasons for rerun
+Changed files or newly in use/created:
+  z-synthetic-da.xdv
+Category 'changed_source_rules':
+  xelatex
+Category 'no_dest':
+  xdvipdfmx
+
+------------
+Run number 1 of rule 'xdvipdfmx'
+------------
+------------
+Running 'xdvipdfmx -E -o "z-synthetic-da.pdf"  "z-synthetic-da.xdv"'
+------------
+z-synthetic-da.xdv -> z-synthetic-da.pdf
+[1]
+28286 bytes written
+Latexmk: All targets (z-synthetic-da.xdv z-synthetic-da.pdf) are up-to-date
+
