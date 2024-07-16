@@ -15,8 +15,9 @@ other factors (e.g. change in weather or vegetation cover).
 - University of Leicester (D. Ghent)
 
 ## Test field sites
-- Burkina Faso
-- Botswana
+- Burkina Faso grids:
+- Botswana grids:
+- Majadas grids: S3/Meteo = E030N006T6 and S2/Landast = X0033_Y0044 
 
 The datasets are accessible in the OSF: https://osf.io/zxuy5/
 
