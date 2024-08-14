@@ -11,7 +11,7 @@
 - [ ] July plot with event classification
 
 - real data EOMAJI's field site:
-  - [ ] Spain 
+  - [ ] Spain Majadas
   - [ ] Burkina
   - [ ] Botswana
  

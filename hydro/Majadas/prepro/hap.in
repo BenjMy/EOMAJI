@@ -3,11 +3,19 @@ STRUCTURAL PARAMETERS
 ------------------------------------------------------------------------------
 Grid spacing along the x-direction =                           0.50
 Grid spacing along the y-direction =                           0.50
+<<<<<<< Updated upstream
 DEM rectangle size along the x-direction =                    21
 DEM rectangle size along the y-direction =                    24
 Number of cells within the catchment =                       504
 X low left corner coordinate =                           3329550.00000000
 Y low left corner coordinate =                           1166850.00000000
+=======
+DEM rectangle size along the x-direction =              7802
+DEM rectangle size along the y-direction =              19997
+Number of cells within the catchment =                     33777
+X low left corner coordinate =                                 0.00000000
+Y low left corner coordinate =                                 0.00000000
+>>>>>>> Stashed changes
 ------------------------------------------------------------------------------
 TERRAIN ANALYSIS PARAMETERS
 ------------------------------------------------------------------------------

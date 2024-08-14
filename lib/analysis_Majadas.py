@@ -25,8 +25,11 @@ import matplotlib.pyplot as plt
 prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
 rootDataPath = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/MAJADAS/')
 figDataPath = Path('../figures/')
-
 file_pattern = '*ET_0-gf*.tif'
+folder_weather_path = rootDataPath/'E030N006T6'
+
+
+file_pattern = '*ET_0*.tif'
 ET_0_filelist = list(prepoEOPath.glob(file_pattern))
 
 file_pattern = '*TPday*.tif'
@@ -49,6 +52,7 @@ majadas_aoi.to_crs(crs_ET_0, inplace=True)
 
 majadas_POIs = gpd.read_file('../data/AOI/POI_Majadas.geojson')
 majadas_POIs.to_crs(crs_ET_0, inplace=True)
+majadas_aoi = gpd.read_file('../data/AOI/POI_Majadas.kmz')
 
 
 #%% Read Majadas DTM
@@ -181,10 +185,61 @@ for ppc in POIs_coords:
 
 #%%
 fig, ax = plt.subplots()
+DTM_rxr.isel(band=0).plot.imshow(vmin=0)
+
+#%% Read Majadas grids: S3/Meteo = E030N006T6 and S2/Landast = X0033_Y0044
+# S3/Meteo EPGS CRS EPSG:27704 - WGS 84 / Equi7 Europe - Projected
+
+# dates = []
+# ETref = []
+for m in ET_0_filelist:
+    # dates.append(extract_filedate(m))
+    etrefi = rio.open_rasterio(m)
+    clipped_etrefi = etrefi.rio.clip_box(
+                                         minx=majadas_aoi.bounds['minx'],
+                                         miny=majadas_aoi.bounds['miny'],
+                                         maxx=majadas_aoi.bounds['maxx'],
+                                         maxy=majadas_aoi.bounds['maxy'],
+                                        crs=majadas_aoi.crs,
+                                        )   
+    clipped_etrefi['time']=extract_filedate(m)
+    clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name + '.tif')
+    
+for m in rain_filelist:
+    # dates.append(extract_filedate(m))
+    etrefi = rio.open_rasterio(m)
+    clipped_etrefi = etrefi.rio.clip_box(
+                                         minx=majadas_aoi.bounds['minx'],
+                                         miny=majadas_aoi.bounds['miny'],
+                                         maxx=majadas_aoi.bounds['maxx'],
+                                         maxy=majadas_aoi.bounds['maxy'],
+                                        crs=majadas_aoi.crs,
+                                        )   
+    clipped_etrefi['time']=extract_filedate(m)
+    clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name + '.tif')
+    
+clipped_etrefi.rio.crs
+    
+#     ETref.append(clipped_etrefi)
+    
+# ETref_alldates = xr.concat(ETref, dim='time')
+
+# # fig, ax = plt.subplots()
+
+# ETref_alldates.isel(band=0,time=0).plot.imshow()
+# ETref_alldates.isel(band=0,time=1).plot.imshow()
+
+
+#%%
+fig, ax = plt.subplots()
+# ETref_alldates.isel(time=0,band=0).plot.imshow(ax=ax)
 DTM_rxr.isel(band=0).plot.imshow(ax=ax,vmin=0)
 fill_value = DTM_rxr.attrs['_FillValue']
 DTM_rxr = DTM_rxr.where(DTM_rxr != fill_value, -9999)
 DTM_rxr.attrs['_FillValue'] = -9999
+
+# majadas_aoi.plot(ax=ax)
+
 DTM_rxr.rio.resolution()
 
 # clipped_etrefi.isel(band=0).plot.imshow()
@@ -211,6 +266,14 @@ DTM_rxr.rio.resolution()
 # clipped_DTM_rxr_upsampled.isel(band=0).plot.imshow()
 
 #%% Create CATHY mesh based on DEM
+
+aa
+#%% Create CATHY mesh based on DEM
+
+import pyCATHY 
+from pyCATHY import CATHY
+from pyCATHY.importers import cathy_inputs as in_CT
+import matplotlib.pyplot as plt
 
 hydro_Majadas = CATHY(
                         dirName='../hydro/',
@@ -245,6 +308,22 @@ hydro_Majadas.update_prepo_inputs(
                                 # M=np.shape(dem_mat)[0],
                                 xllcorner=RAIN.x.min().values,
                                 yllcorner=RAIN.y.min().values
+# dem_mat, str_hd_dem = in_CT.read_dem(DTM_rxr.values)
+
+fig, ax = plt.subplots(1)
+img = ax.imshow(
+                DTM_rxr.values[0],
+                vmin=0
+                )
+plt.colorbar(img)
+
+
+hydro_Majadas.show_input(prop="dem")
+
+hydro_Majadas.update_prepo_inputs(
+                                DEM=DTM_rxr.values[0],
+                                # N=np.shape(dem_mat)[1],
+                                # M=np.shape(dem_mat)[0],
                             )
 
 fig = plt.figure()

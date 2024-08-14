@@ -19,6 +19,9 @@ other factors (e.g. change in weather or vegetation cover).
 - Botswana grids:
 - Majadas grids: S3/Meteo = E030N006T6 and S2/Landast = X0033_Y0044 
 
+**DTM**
+- Majadas: MDT02-ETRS89-HU30-0624-1-COB2.tif (from https://centrodedescargas.cnig.es/CentroDescargas/index.jsp)
+
 The datasets are accessible in the OSF: https://osf.io/zxuy5/
 
 ## Inputs EO-based ET models
