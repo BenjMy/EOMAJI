@@ -24,6 +24,22 @@ The datasets are accessible in the OSF: https://osf.io/zxuy5/
 ## Inputs EO-based ET models
 - Sentinel-2 and Sentinel-3 satellites
 
+Spain irrigation accounting note: 
+- 4 tiles to cover Spain
+- format= *.vrt (virtual raster tile)
+- Resolution = 300m at daily scale
+- Range from Oct. 2008 to Dec. 2022
+- Nomenclature:
+  - TPday: daily total precipitation (mm)
+  - ET0: potential ET (mm/day)
+  - ET: actual ET (mm/day)
+  - *GS*: gap filled
+- Interesting irrigation districts:
+  - Majadas de Tietar
+  - Leida/Balaguer
+  - Astorga/Leon/Benavente (Duero Bassin)
+ 
+
 ### New satellite missions
 
 - [ECOSTRESS](https://ecostress.jpl.nasa.gov/) thermal sensor: can provide robust measurements of Land Surface Temperature at high spatial and temporal resolutions
