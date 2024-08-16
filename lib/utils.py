@@ -20,6 +20,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 
+
+def extract_filedate(file_path):
+    file_name = file_path.name
+    date_str = file_name.split('_')[0]
+    return datetime.strptime(date_str, '%Y%m%d')
+
 #%% Function to build the analysis xarray dataset
 
 def get_analysis_ds(out_with_IRR):

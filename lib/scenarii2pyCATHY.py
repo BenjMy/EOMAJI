@@ -276,7 +276,7 @@ def setup_cathy_simulation(
     if 'rain_flow' in scenario.keys():
         netValue[rain_index_start] =+  scenario['rain_flow']        
        
-        
+    # np.shape(netValue)
     # Set IETO to 0 for NO linear interpolation of atmbc values
     # ----------------------------------------------------------------------
     simu.update_atmbc(

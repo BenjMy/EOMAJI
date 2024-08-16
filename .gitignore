@@ -1,2 +1,5 @@
 pyCATHY 
 *.tif
+*WB_FieldModels*
+*WB_twinModels*	
+WB_twinModels**
