@@ -61,34 +61,6 @@ filtered_RAIN = filtered_RAIN.sel(time=mask_time)
 filtered_ETp = filtered_ETp.sel(time=mask_time)
 np.shape(filtered_ETp)
 
-#%%
-
-for i in range(len(ETp)):
-    ETp.isel(time=i).plot.imshow(
-                                figsize = (12,6),
-                                vmin=0, vmax=6,
-                                cmap='coolwarm',    # Change the colormap back to 'bwr'
-                                cbar_kwargs={
-                                    'extend':'neither' # Don't extend the colorbar in either direction. Other possibilities
-                                                       # would be 'both', 'min', or 'max'
-                                }
-                            )
-    plt.title("Time = " + str(ETp.coords['time'].values[i])[:11])
-    plt.savefig(figPath / f"ETp_frame_{i:04}.png")
-    plt.close()
-
-#%%
-# !convert ETp_frame_*.png ETp.gif
-# display(HTML("<img src= figPath / f"ETp.gif' />"))
-             
-#%%
-
-# import xarray as xr
-# from xmovie import Movie
-
-# # ds = xr.tutorial.open_dataset('air_temperature').isel(time=slice(0,150))
-# mov = Movie(ETp.isel(time=[0,30]))
-# mov.save('movie.mp4')
 
 #%%
 from matplotlib.animation import FuncAnimation
@@ -106,7 +78,6 @@ cax = ETp.isel(time=0).plot.imshow(
         'extend':'neither'
     }
 )
-
 # Next we need to create a function that updates the values for the colormesh, as well as the title.
 def animate(frame):
     cax.set_array(ETp.isel(time=frame).values)
@@ -116,11 +87,12 @@ def animate(frame):
 ani = FuncAnimation(
     fig,             # figure
     animate,         # name of the function above
-    frames=len(ETp),       # Could also be iterable or list
+    frames=40,       # Could also be iterable or list
     interval=200     # ms between frames
 )
 
-ani.save(filename="pillow_example.gif", writer="pillow")
+ani.save(filename=figPath/"ETp.gif", 
+         writer="pillow")
 
 
 #%% Create CATHY mesh based on DEM
@@ -162,12 +134,13 @@ DEM_notopo[-1,-1]= 1-1e-3
 #                                 # yllcorner=RAIN.y.min().values
 #                                 )
 
-
-
+# sss
+deltax = RAIN.rio.resolution()[0]
+deltay = RAIN.rio.resolution()[1]
 hydro_Majadas.update_prepo_inputs(
                                 DEM=DEM_notopo,
-                                delta_x = 300,
-                                delta_y = 300,
+                                delta_x = abs(deltax),
+                                delta_y = abs(deltay),
                                 # N=np.shape(dem_mat)[1],
                                 # M=np.shape(dem_mat)[0],
                                 # xllcorner=0,

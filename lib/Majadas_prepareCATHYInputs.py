@@ -7,13 +7,15 @@ Created on Tue Nov  7 10:50:23 2023
 
 import geopandas as gpd
 import shapely as shp
-import rioxarray as rio
+import rioxarray as rxr
 import xarray as xr
 from pathlib import Path
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
-
+from rioxarray.merge import merge_arrays
+from geocube.api.core import make_geocube
+import matplotlib.colors as mcolors
 
 import Majadas_utils
 import utils
@@ -35,7 +37,14 @@ file_pattern = '*TPday*.tif'
 rain_filelist = list(prepoEOPath.glob(file_pattern))
 
 
-crs_ET_0 = rio.open_rasterio(ET_0_filelist[0]).rio.crs
+crs_ET = rxr.open_rasterio(ET_0_filelist[0]).rio.crs
+ET_test = rxr.open_rasterio(ET_0_filelist[0])
+
+ETp_ds = xr.open_dataset('../prepro/ETp_Majadas.netcdf')
+ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
+RAIN_ds = xr.open_dataset('../prepro/RAIN_Majadas.netcdf')
+RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
+
 
 #%% Read AOI points and plots
     
@@ -46,11 +55,144 @@ majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
 
 
 # majadas_aoi = gpd.read_file('../data/AOI/POI_Majadas.kmz')
+#%%
+clc_codes = utils.get_CLC_code_def()
+
+CLC_path = Path('../data/95732/Results/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
+CLC_Majadas = gpd.read_file(CLC_path)
+CLC_Majadas = CLC_Majadas.to_crs(majadas_aoi.crs)
+CLC_clipped = gpd.clip(CLC_Majadas, majadas_aoi)
+
+# CLC_clipped['Land_Cover_Name'] = CLC_clipped['Code_18'].map(clc_codes)
+# CLC_clipped.plot('Land_Cover_Name')
+
+# CLC_Majadas.Code_18=CLC_Majadas.Code_18.astype(int)
+
+categorical_enums = {'Code_18': CLC_clipped['Code_18']}
+
+CLC_Majadas_clipped_grid = make_geocube(
+    vector_data=CLC_clipped,
+    output_crs=crs_ET,
+    # group_by='Land_Cover_Name',
+    resolution=(-100, 100),
+    categorical_enums= categorical_enums
+)
+
+# CLC_Majadas_clipped_grid.rio.crs
+# CLC_Majadas_clipped_grid = CLC_Majadas_clipped_grid.rio.reproject(crs_ET_0)
+
+
+# CLC_Majadas_clipped_grid = CLC_Majadas_clipped_grid.transpose('y', 'x')
+# CLC_Majadas_clipped_grid = CLC_Majadas_clipped_grid.transpose('x', 'y', 'Code_18_categories')
+
+
+#%%
+
+# rgb_Majadas = rxr.open_rasterio('../data/Majadas.tif')
+# rgb_Majadas.rio.crs
+# rgb_Majadas = rgb_Majadas.rio.reproject(crs_ET_0)
+
+# rgb_image = rgb_Majadas.isel(band=[0, 1, 2])
+
+# plt.figure(figsize=(10, 10))
+# rgb_image.plot.imshow(rgb='band', ax=plt.gca())
+
+#%%
+import leafmap
+
+bbox = majadas_aoi.total_bounds  # returns (minx, miny, maxx, maxy)
+
+# m = leafmap.Map()
+# image = m.add_basemap("SATELLITE")
+
+# Define the region of interest (ROI) using the bounding box
+# roi = [bbox[1], bbox[0], bbox[3], bbox[2]]  # [miny, minx, maxy, maxx]
+
+# Download the satellite image for the specified ROI
+# Saving the image to a file
+# image_path = "satellite_image.tif"
+# m.download_ee_image_to_local(
+#     image, output=image_path, region=roi, scale=10, crs="EPSG:4326"
+# )
+leafmap.map_tiles_to_geotiff("satellite.tif", 
+                             bbox, 
+                             zoom=13, 
+                             source="Esri.WorldImagery"
+                             )
+
+# # Open the downloaded image using rioxarray
+# raster = rxr.open_rasterio(image_path)
+
+# # Clip the image using the shapefile
+# clipped_raster = raster.rio.clip(majadas_aoi.geometry, majadas_aoi.crs)
+
+#%%
+
+# Assuming `raster_xarray` is your xarray.Dataset with the variables loaded
+
+# Extract the categorical mapping (if available)
+categories = CLC_Majadas_clipped_grid['Code_18_categories'].values
+
+# Create a dictionary mapping the Code_18 values to the categories
+category_mapping = {i: cat for i, cat in enumerate(categories)}
+
+# Extract the Code_18 data
+code_18_data = CLC_Majadas_clipped_grid['Code_18']
+
+# Define a colormap for the categories
+cmap = mcolors.ListedColormap(plt.cm.get_cmap('tab20').colors[:len(categories)])
+norm = mcolors.BoundaryNorm(boundaries=range(len(categories) + 1), ncolors=len(categories))
+
+# Plot using imshow with the defined colormap
+fig, axs = plt.subplots(2,2,
+                        # sharex=True,
+                        # sharey=True
+                        )
+axs = axs.flatten()
+CLC_clipped.plot('Code_18',ax=axs[0])
+# plt.figure(figsize=(12, 8))
+code_18_data.plot.imshow(cmap=cmap, norm=norm, add_colorbar=False,
+                         ax=axs[1])
+
+majadas_aoi.boundary.plot(ax=axs[0],color='r')
+majadas_POIs.plot(ax=axs[0],color='r')
+majadas_aoi.boundary.plot(ax=axs[1],color='r')
+
+# Create a custom legend
+legend_labels = {i: category_mapping[i] for i in range(len(categories))}
+legend_patches = [plt.Line2D([0], [0], marker='o', color='w', label=legend_labels[i],
+                             markerfacecolor=cmap(i), markersize=10) for i in range(len(categories))]
+
+axs[1].legend(handles=legend_patches, title="Land Cover Types", loc="lower right", fontsize='small', title_fontsize='medium')
+
+# Show the plot
+axs[1].set_title("Land Cover Map - Code_18")
+
+# rgb_image.plot.imshow(rgb='band', ax=axs[2])
+# majadas_aoi.boundary.plot(ax=axs[2],color='r')
+# providers = cx.providers.flatten()
+
+ETp_ds.isel(band=0)['ETp'].isel(time=0).plot.imshow(ax=axs[3])
+majadas_aoi.boundary.plot(ax=axs[3],color='r')
+
+# cx.add_basemap(ax=axs[1],
+#                source=cx.providers.Esri.WorldImagery
+#                )
+
+
+fig.savefig(figPath/'LandCoverRaster_Majadas.png',dpi=300)
+
+#%%
+CLC_Majadas_clipped_grid.Code_18.isel(Land_Cover_Name=0).plot.imshow()
+# CLC_string = CLC_Majadas_clipped_grid['Land_Cover_Name'][CLC_Majadas_clipped_grid['Code_18'].astype(int)].drop('Land_Cover_Name')
+    
+# CLC_Majadas_grid['drclassdcd'] = drclassdcd_string
+# CLC_Majadas_grid
 
 
 #%% Read Majadas DTM
 # DTM EPSG:25830 - ETRS89 / UTM zone 30N - Projected
-from rioxarray.merge import merge_arrays
+
 
 DTMfiles = [
             '../data/DTM/MDT02-ETRS89-HU30-0624-1-COB2_reproj.tif',
@@ -58,10 +200,10 @@ DTMfiles = [
             ]
 DTM_rxr = []
 for dtm in DTMfiles:
-    DTM_rxr.append(rio.open_rasterio(dtm))
+    DTM_rxr.append(rxr.open_rasterio(dtm))
 DTM_rxr = merge_arrays(DTM_rxr)
 # DTM_rxr.rio.crs= crs_ET_0
-DTM_rxr.rio.write_crs(crs_ET_0, inplace=True)
+DTM_rxr.rio.write_crs(crs_ET, inplace=True)
 DTM_rxr.rio.crs
 
 clipped_DTM_rxr = DTM_rxr.rio.clip_box(
@@ -71,40 +213,17 @@ clipped_DTM_rxr = DTM_rxr.rio.clip_box(
                                       maxy=majadas_aoi.bounds['maxy'],
                                       crs=majadas_aoi.crs,
                                     )  
-# ss
-#%%
 
-import cf_xarray as cfxr
-import geopandas as gpd
-
-# Example using a web service.
-gdf = gpd.read_file("https://api.weather.gc.ca/collections/climate-daily/items?datetime=2010-03-01%2000:00:00/2010-06-02%2000:00:00&bbox=-115,50,-112,51&sortby=PROVINCE_CODE,STN_ID,LOCAL_DATE&f=json&limit=150000&startindex=0")
-
-gdfr = gdf.rename(columns={'LOCAL_DATE': 'time'}).set_index('time')
-ds_raw = gdfr.to_xarray()
-
-ds_uniq = cfxr.geometry.reshape_unique_geometries(ds_raw)
-
-outcf = cfxr.geometry_to_cf(ds_uniq.geometry, grid_mapping='longitude_latitude')
-outcf = xr.merge([ds_uniq.drop_vars('geometry'), outcf])
 
 #%%
 
-from geocube.api.core import make_geocube
-
-out_grid = make_geocube(
-    vector_data="path_to_file.gpkg",
-    measurements=["column_name"],
-    resolution=(-0.0001, 0.0001),
-)
-out_grid["column_name"].rio.to_raster("my_rasterized_column.tif")
+CLC_Majadas.plot('Land_Cover_Name')
 
 #%%
-CLC_path = Path('../data/95732/Results/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
-
-CLC_Majadas = gpd.read_file(CLC_path)
-
 CLC_Majadas.set_index('Code_18').to_xarray()
+CLC_Majadas["Code_18"].rio.to_raster("my_rasterized_column.tif")
+
+
 
 # CLC_Majadas.plot()
 # CLC_Majadas.crs
@@ -187,10 +306,6 @@ fig.savefig(figPath/'DTM_Majadas.png', dpi=300)
 
 
 #%%
-ETp_ds = xr.open_dataset('../prepro/ETp_Majadas.netcdf')
-ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
-RAIN_ds = xr.open_dataset('../prepro/RAIN_Majadas.netcdf')
-RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
 
 
 ETp = ETp_ds.to_dataarray().isel(variable=0,band=0).sortby('time')
@@ -234,7 +349,7 @@ DTM_rxr.isel(band=0).plot.imshow(vmin=0)
 # dates = []
 # ETref = []
 for m in ET_0_filelist:
-    etrefi = rio.open_rasterio(m)
+    etrefi = rxr.open_rasterio(m)
     clipped_etrefi = etrefi.rio.clip_box(
                                          minx=majadas_aoi.bounds['minx'],
                                          miny=majadas_aoi.bounds['miny'],
@@ -246,7 +361,7 @@ for m in ET_0_filelist:
     clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name + '.tif')
     
 for m in rain_filelist:
-    etrefi = rio.open_rasterio(m)
+    etrefi = rxr.open_rasterio(m)
     clipped_etrefi = etrefi.rio.clip_box(
                                          minx=majadas_aoi.bounds['minx'],
                                          miny=majadas_aoi.bounds['miny'],
