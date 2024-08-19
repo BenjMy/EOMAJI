@@ -18,6 +18,9 @@ import pyvista as pv
 import pandas as pd
 
 import Majadas_utils
+import os
+
+figPath = Path('../figures/')
 
 #%% Import input data 
 
@@ -57,6 +60,68 @@ mask_time = (filtered_RAIN.time >= start_time) & (filtered_RAIN.time <= end_time
 filtered_RAIN = filtered_RAIN.sel(time=mask_time)
 filtered_ETp = filtered_ETp.sel(time=mask_time)
 np.shape(filtered_ETp)
+
+#%%
+
+for i in range(len(ETp)):
+    ETp.isel(time=i).plot.imshow(
+                                figsize = (12,6),
+                                vmin=0, vmax=6,
+                                cmap='coolwarm',    # Change the colormap back to 'bwr'
+                                cbar_kwargs={
+                                    'extend':'neither' # Don't extend the colorbar in either direction. Other possibilities
+                                                       # would be 'both', 'min', or 'max'
+                                }
+                            )
+    plt.title("Time = " + str(ETp.coords['time'].values[i])[:11])
+    plt.savefig(figPath / f"ETp_frame_{i:04}.png")
+    plt.close()
+
+#%%
+# !convert ETp_frame_*.png ETp.gif
+# display(HTML("<img src= figPath / f"ETp.gif' />"))
+             
+#%%
+
+# import xarray as xr
+# from xmovie import Movie
+
+# # ds = xr.tutorial.open_dataset('air_temperature').isel(time=slice(0,150))
+# mov = Movie(ETp.isel(time=[0,30]))
+# mov.save('movie.mp4')
+
+#%%
+from matplotlib.animation import FuncAnimation
+from matplotlib import animation
+
+# Get a handle on the figure and the axes
+fig, ax = plt.subplots(figsize=(12,6))
+
+# Plot the initial frame. 
+cax = ETp.isel(time=0).plot.imshow(
+    add_colorbar=True,
+    cmap='coolwarm',
+    vmin=0, vmax=6,
+    cbar_kwargs={
+        'extend':'neither'
+    }
+)
+
+# Next we need to create a function that updates the values for the colormesh, as well as the title.
+def animate(frame):
+    cax.set_array(ETp.isel(time=frame).values)
+    ax.set_title("Time = " + str(ETp.coords['time'].values[frame])[:13])
+
+# Finally, we use the animation module to create the animation.
+ani = FuncAnimation(
+    fig,             # figure
+    animate,         # name of the function above
+    frames=len(ETp),       # Could also be iterable or list
+    interval=200     # ms between frames
+)
+
+ani.save(filename="pillow_example.gif", writer="pillow")
+
 
 #%% Create CATHY mesh based on DEM
 
@@ -198,14 +263,14 @@ hydro_Majadas.update_parm(
                         IPRT=4,
                         VTKF=2,
                         )
-hydro_Majadas.run_processor(
-                      IPRT1=2,
-                      TRAFLAG=0,
-                      DTMIN=1e-3,
-                      DTMAX=1e3,
-                      DELTAT=100,
-                      verbose=True
-                      )
+# hydro_Majadas.run_processor(
+#                       IPRT1=2,
+#                       TRAFLAG=0,
+#                       DTMIN=1e-3,
+#                       DTMAX=1e3,
+#                       DELTAT=100,
+#                       verbose=True
+#                       )
 #%%
 
 cplt.show_vtk_TL(
@@ -267,6 +332,71 @@ for i, cp in enumerate(all_closestPos):
 pl.show_grid()
 pl.show()
 
+
+#%%
+from pyCATHY.importers import cathy_outputs as out_CT
+
+df_fort777 = out_CT.read_fort777(os.path.join(hydro_Majadas.workdir,
+                                              hydro_Majadas.project_name,
+                                              'fort.777'),
+                                 )
+
+
+#%%
+fig, ax = plt.subplots(1)
+hydro_Majadas.show('spatialET',
+                   ax=ax, 
+                   ti=10,
+                    clim=[0,5e-9],
+                   )
+fig.savefig(figPath/'spatialET_Majadas.png',
+            dpi=300
+            )
+
+#%%
+
+
+# Get a handle on the figure and the axes
+fig, ax = plt.subplots(figsize=(12,6))
+
+# Plot the initial frame. 
+cax = hydro_Majadas.show('spatialET',
+                         ax=ax, 
+                         ti=0,
+                         clim=[0,5e-9],
+
+                   )
+
+
+ti = df_fort777['time'].unique()[1]
+df_fort777_select_t_xr = df_fort777.set_index(['time','X','Y']).to_xarray()
+df_fort777_select_t_xr = df_fort777_select_t_xr.rio.set_spatial_dims('X','Y')
+
+# if crs is not None:
+#     df_fort777_select_t_xr.rio.write_crs(crs, inplace=True)
+# df_fort777_select_t_xr = df_fort777_select_t_xr.transpose('Y', 'X')
+# data_array = df_fort777_select_t_xr['ACT. ETRA'].values
+  
+# Next we need to create a function that updates the values for the colormesh, as well as the title.
+def animate(frame):
+    vi = df_fort777_select_t_xr.isel(time=frame)['ACT. ETRA'].values
+    cax.set_array(vi)
+    ax.set_title("Time = " + str(df_fort777_select_t_xr.coords['time'].values[frame])[:13])
+
+# Finally, we use the animation module to create the animation.
+ani = FuncAnimation(
+    fig,             # figure
+    animate,         # name of the function above
+    frames=100,       # Could also be iterable or list
+    interval=200     # ms between frames
+)
+
+ani.save(filename=figPath/"spatialET_Majadas.gif",
+         writer="pillow"
+         )
+
+
+
 #%%
 POROSITY_GUESS = 0.75
 df_sw, _ = hydro_Majadas.read_outputs('sw')
@@ -292,4 +422,6 @@ rain_poi = filtered_RAIN.sel(x=all_nodes_SMC[0],y=all_nodes_SMC[1], method="near
 # rain_poi.plot(ax=ax1)
 
 plt.tight_layout()
-# plt.savefig(str(fig_path) + prj_name + '_Saturation_simu_VS_Real.png',dpi=300)
+plt.savefig(figPath/'_Saturation_simu_Majadas.png',
+            dpi=300
+            )

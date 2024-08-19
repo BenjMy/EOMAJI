@@ -24,6 +24,15 @@ other factors (e.g. change in weather or vegetation cover).
 
 The datasets are accessible in the OSF: https://osf.io/zxuy5/
 
+**Land Cover Map**
+https://land.copernicus.eu/en/cart-downloads
+CORINE Land Cover 2018 (vector/raster 100 m), Europe, 6-yearly - Shapefile (NUTS: ES432)
+
+**Watershed**
+https://land.copernicus.eu/en/cart-downloads
+EU-Hydro River Network Database 2006-2012 (vector), Europe - Shapefile (NUTS: ES432)
+EU-Hydro River Network Database 2006-2012 (vector), Europe - Shapefile (Bounding Box)
+
 ## Inputs EO-based ET models
 - Sentinel-2 and Sentinel-3 satellites
 

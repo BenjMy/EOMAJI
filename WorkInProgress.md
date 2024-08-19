@@ -15,6 +15,7 @@
   - [ ] Burkina
   - [ ] Botswana
  
+- [ ] compare simus with TDR real data
 ## Redaction
 
 - [ ] **Title**: ??

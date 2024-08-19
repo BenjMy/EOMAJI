@@ -12,6 +12,7 @@ from pyCATHY.plotters import cathy_plots as cplt
 from pyCATHY.importers import cathy_outputs as out_CT
 import pyCATHY.meshtools as msh_CT
 import utils
+from datetime import datetime
 
 
 import os

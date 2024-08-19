@@ -14,9 +14,10 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-import Majadas_utils
-import utils
+import pyCATHY 
+from pyCATHY import CATHY
+from pyCATHY.importers import cathy_inputs as in_CT
+from pyCATHY.plotters import cathy_plots as cplt
 
 #%% Define path and crs projection 
 
@@ -35,16 +36,22 @@ file_pattern = '*TPday*.tif'
 rain_filelist = list(prepoEOPath.glob(file_pattern))
 
 
+def extract_filedate(file_path):
+    file_name = file_path.name
+    date_str = file_name.split('_')[0]
+    return datetime.strptime(date_str, '%Y%m%d')
+
 crs_ET_0 = rio.open_rasterio(ET_0_filelist[0]).rio.crs
 
 #%% Read AOI points and plots
-    
 
-majadas_aoi = Majadas_utils.get_Majadas_aoi()
+majadas_aoi = gpd.read_file('../data/AOI/majadas_aoi.geojson')
+majadas_aoi.crs
+majadas_aoi.to_crs(crs_ET_0, inplace=True)
 
-majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
 
-
+majadas_POIs = gpd.read_file('../data/AOI/POI_Majadas.geojson')
+majadas_POIs.to_crs(crs_ET_0, inplace=True)
 # majadas_aoi = gpd.read_file('../data/AOI/POI_Majadas.kmz')
 
 
@@ -62,7 +69,7 @@ for dtm in DTMfiles:
 DTM_rxr = merge_arrays(DTM_rxr)
 # DTM_rxr.rio.crs= crs_ET_0
 DTM_rxr.rio.write_crs(crs_ET_0, inplace=True)
-DTM_rxr.rio.crs
+
 
 clipped_DTM_rxr = DTM_rxr.rio.clip_box(
                                       minx=majadas_aoi.bounds['minx'],
@@ -71,46 +78,6 @@ clipped_DTM_rxr = DTM_rxr.rio.clip_box(
                                       maxy=majadas_aoi.bounds['maxy'],
                                       crs=majadas_aoi.crs,
                                     )  
-# ss
-#%%
-
-import cf_xarray as cfxr
-import geopandas as gpd
-
-# Example using a web service.
-gdf = gpd.read_file("https://api.weather.gc.ca/collections/climate-daily/items?datetime=2010-03-01%2000:00:00/2010-06-02%2000:00:00&bbox=-115,50,-112,51&sortby=PROVINCE_CODE,STN_ID,LOCAL_DATE&f=json&limit=150000&startindex=0")
-
-gdfr = gdf.rename(columns={'LOCAL_DATE': 'time'}).set_index('time')
-ds_raw = gdfr.to_xarray()
-
-ds_uniq = cfxr.geometry.reshape_unique_geometries(ds_raw)
-
-outcf = cfxr.geometry_to_cf(ds_uniq.geometry, grid_mapping='longitude_latitude')
-outcf = xr.merge([ds_uniq.drop_vars('geometry'), outcf])
-
-#%%
-
-from geocube.api.core import make_geocube
-
-out_grid = make_geocube(
-    vector_data="path_to_file.gpkg",
-    measurements=["column_name"],
-    resolution=(-0.0001, 0.0001),
-)
-out_grid["column_name"].rio.to_raster("my_rasterized_column.tif")
-
-#%%
-CLC_path = Path('../data/95732/Results/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
-
-CLC_Majadas = gpd.read_file(CLC_path)
-
-CLC_Majadas.set_index('Code_18').to_xarray()
-
-# CLC_Majadas.plot()
-# CLC_Majadas.crs
-# CLC_Majadas_reprojected = CLC_Majadas.to_crs(epsg=crs_ET_0)
-CLC_Majadas['Code_18'].to_xarray()
-CLC_Majadas.to_xarray()
 
 #%% plot majadas DTM 
 fig, axs = plt.subplots(1,2)
@@ -136,7 +103,7 @@ fig.savefig(figPath/'DTM_Majadas.png', dpi=300)
 #                                           maxy=majadas_aoi.bounds['maxy'],
 #                                         crs=majadas_aoi.crs,
 #                                         )   
-#     clipped_etrefi['time']=utils.extract_filedate(m)
+#     clipped_etrefi['time']=extract_filedate(m)
 #     clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name)
     
 # for m in rain_filelist:
@@ -148,7 +115,7 @@ fig.savefig(figPath/'DTM_Majadas.png', dpi=300)
 #                                           maxy=majadas_aoi.bounds['maxy'],
 #                                         crs=majadas_aoi.crs,
 #                                         )   
-#     clipped_etrefi['time']=utils.extract_filedate(m)
+#     clipped_etrefi['time']=extract_filedate(m)
 #     clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name)
     
 
@@ -168,7 +135,7 @@ fig.savefig(figPath/'DTM_Majadas.png', dpi=300)
 # ETp_dates = []
 # for m in ET_0_clipped_filelist:
 #     ETpfi = rio.open_rasterio(m)
-#     ETpfi['time']=utils.extract_filedate(m)
+#     ETpfi['time']=extract_filedate(m)
 #     ETp_l.append(ETpfi)
 #     ETp_dates.append(ETpfi['time'])
 
@@ -176,7 +143,7 @@ fig.savefig(figPath/'DTM_Majadas.png', dpi=300)
 # rain_dates = []
 # for m in rain_clipped_filelist:
 #     rainfi = rio.open_rasterio(m)
-#     rainfi['time']=utils.extract_filedate(m)
+#     rainfi['time']=extract_filedate(m)
 #     rain.append(rainfi)
 #     rain_dates.append(rainfi['time'])
 
@@ -204,6 +171,12 @@ RAIN = RAIN.where((RAIN <= 300) & (RAIN > 0), other=0)
 
 #%% Check variations on POI
 
+
+multipoint_geom = majadas_POIs.geometry.iloc[0]
+POIs_coords = np.array([point.coords[0] for point in multipoint_geom.geoms])
+
+
+#%%
 labels_POIs = ['Lake','Intensive Irrigation','Tree-Grass']
 fig, ax = plt.subplots()
 for i, ppc in enumerate(POIs_coords):
@@ -234,6 +207,7 @@ DTM_rxr.isel(band=0).plot.imshow(vmin=0)
 # dates = []
 # ETref = []
 for m in ET_0_filelist:
+    # dates.append(extract_filedate(m))
     etrefi = rio.open_rasterio(m)
     clipped_etrefi = etrefi.rio.clip_box(
                                          minx=majadas_aoi.bounds['minx'],
@@ -242,10 +216,11 @@ for m in ET_0_filelist:
                                          maxy=majadas_aoi.bounds['maxy'],
                                         crs=majadas_aoi.crs,
                                         )   
-    clipped_etrefi['time']=utils.extract_filedate(m)
+    clipped_etrefi['time']=extract_filedate(m)
     clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name + '.tif')
     
 for m in rain_filelist:
+    # dates.append(extract_filedate(m))
     etrefi = rio.open_rasterio(m)
     clipped_etrefi = etrefi.rio.clip_box(
                                          minx=majadas_aoi.bounds['minx'],
@@ -254,7 +229,7 @@ for m in rain_filelist:
                                          maxy=majadas_aoi.bounds['maxy'],
                                         crs=majadas_aoi.crs,
                                         )   
-    clipped_etrefi['time']=utils.extract_filedate(m)
+    clipped_etrefi['time']=extract_filedate(m)
     clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name + '.tif')
     
 clipped_etrefi.rio.crs
