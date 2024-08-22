@@ -3,6 +3,6 @@
 "name": "POI_Majadas.kmz",
 "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
 "features": [
-{ "type": "Feature", "properties": { "Name": "lake1" }, "geometry": { "type": "MultiPoint", "coordinates": [ [ -5.78785247361672, 39.946768443002 ], [ -5.7988342894461, 39.955712571200898 ], [ -5.76496854515526, 39.928890391737703 ] ] } }
+{ "type": "Feature", "properties": { "Name": "lake1" }, "geometry": { "type": "MultiPoint", "coordinates": [ [ -5.78785247361672, 39.946768443002 ], [ -5.7988342894461, 39.955712571200898 ], [ -5.76496854515526, 39.928890391737703 ], [ -5.77365433680769, 39.954143560364699 ] ] } }
 ]
 }

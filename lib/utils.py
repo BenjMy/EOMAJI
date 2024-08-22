@@ -13,7 +13,8 @@ from pyCATHY.importers import cathy_outputs as out_CT
 import pyCATHY.meshtools as msh_CT
 import utils
 from datetime import datetime
-
+from pathlib import Path
+import rioxarray as rxr 
 
 import os
 import pyvista as pv
@@ -48,11 +49,18 @@ def add_ETp2ds(ETp,ds_analysis):
     return ds_analysis
 
     
-def compute_ratio_ETap_local(ds_analysis):
-    ds_analysis["ratio_ETap_local"] = ds_analysis["ACT. ETRA"]/ds_analysis["ETp"]
+def compute_ratio_ETap_local(ds_analysis,
+                             ETa_name='ACT. ETRA',
+                             ETp_name='ETp',
+                             ):
+    ds_analysis["ratio_ETap_local"] = ds_analysis[ETa_name]/ds_analysis[ETp_name]
     return ds_analysis
 
-def compute_regional_ETap(ds_analysis,window_size_x=10):
+def compute_regional_ETap(ds_analysis,
+                          ETa_name='ACT. ETRA',
+                          ETp_name='ETp',
+                          window_size_x=10
+                          ):
     # (i.e. as an average change in all agricultural pixels within 10 km window)
     # Compute local ratio to check: 
     # b) There is input of water into the soil but due to rainfall (e.g. increase in regional ETa/p is over a
@@ -60,16 +68,19 @@ def compute_regional_ETap(ds_analysis,window_size_x=10):
     # c) There is input of water to the soil due to irrigation (e.g. increase in local ETa/p is over a
     # threshold and significantly larger than increase in regional ETa/p)
     # Compute the rolling mean on X and Y dimensions for the ETp variable
-    for pp in ['ETp', 'ACT. ETRA']:
-        rolling_mean = ds_analysis[pp].rolling(X=window_size_x, 
-                                               Y=window_size_x, 
+    for pp in [ETa_name, ETp_name]:
+        rolling_mean = ds_analysis[pp].rolling(x=window_size_x, 
+                                               y=window_size_x, 
                                                center=True,
                                               ).mean()
         ds_analysis[pp+'_rolling_mean'] = rolling_mean
     return ds_analysis
 
-def compute_ratio_ETap_regional(ds_analysis):
-    ds_analysis["ratio_ETap_rolling_regional"] = ds_analysis['ACT. ETRA_rolling_mean']/ds_analysis["ETp_rolling_mean"]
+def compute_ratio_ETap_regional(ds_analysis,
+                                ETa_name='ACT. ETRA',
+                                ETp_name='ETp',
+                                ):
+    ds_analysis["ratio_ETap_rolling_regional"] = ds_analysis[f'{ETa_name}_rolling_mean']/ds_analysis[f'{ETp_name}_rolling_mean']
     return ds_analysis
 
 
@@ -369,3 +380,170 @@ def get_CLC_code_def():
     }
     
     return clc_codes
+
+
+def CLC_2_rootdepth():
+    
+    CLC_root_depth = {
+        'Road and rail networks and associated land': 1e-3,
+        'Permanently irrigated land': 0.3,
+        'Olive groves': 3,
+        'Complex cultivation patterns': 0.5,
+        'Agro-forestry areas': 3,
+        'Coniferous forest': 3,
+        'Natural grasslands': 0.2,
+        'Sclerophyllous vegetation': 0.5,
+        'Transitional woodland-shrub': 0.5,
+        'Discontinuous urban fabric':1e-3,
+        'nodata':1e-3,
+        'Non-irrigated arable land':0.5,
+        'Broad-leaved forest': 3,
+        'Water courses': 1e-3,
+        }
+    
+    return CLC_root_depth
+
+
+def clip_rioxarray(ET_filelist,ET_0_filelist,rain_filelist,
+                   majadas_aoi):
+        
+    for m in ET_filelist:
+        etai = rxr.open_rasterio(m)
+        clipped_etai = etai.rio.clip_box(
+                                          minx=majadas_aoi.bounds['minx'],
+                                          miny=majadas_aoi.bounds['miny'],
+                                          maxx=majadas_aoi.bounds['maxx'],
+                                          maxy=majadas_aoi.bounds['maxy'],
+                                        crs=majadas_aoi.crs,
+                                        )   
+        
+        # clipped_etai = etai.rio.clip(
+        #                                 majadas_aoi.geometry,
+        #                                 crs=majadas_aoi.crs,
+        #                                 )  
+        
+        clipped_etai['time']=utils.extract_filedate(m)
+        clipped_etai.rio.to_raster('../prepro/Majadas/' + m.name)
+        
+    
+    for m in ET_0_filelist:
+        etrefi = rxr.open_rasterio(m)
+        clipped_etrefi = etrefi.rio.clip_box(
+                                              minx=majadas_aoi.bounds['minx'],
+                                              miny=majadas_aoi.bounds['miny'],
+                                              maxx=majadas_aoi.bounds['maxx'],
+                                              maxy=majadas_aoi.bounds['maxy'],
+                                            crs=majadas_aoi.crs,
+                                            )   
+        # clipped_etrefi = etrefi.rio.clip(
+        #                                     majadas_aoi.geometry,
+        #                                     crs=majadas_aoi.crs,
+        #                                     )   
+        clipped_etrefi['time']=utils.extract_filedate(m)
+        clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name)
+        
+    for m in rain_filelist:
+        raini = rxr.open_rasterio(m)
+        clipped_raini = raini.rio.clip_box(
+                                              minx=majadas_aoi.bounds['minx'],
+                                              miny=majadas_aoi.bounds['miny'],
+                                              maxx=majadas_aoi.bounds['maxx'],
+                                              maxy=majadas_aoi.bounds['maxy'],
+                                            crs=majadas_aoi.crs,
+                                            )   
+        # clipped_raini = raini.rio.clip(
+        #                                     majadas_aoi.geometry,
+        #                                     crs=majadas_aoi.crs,
+        #                                     )   
+    
+        clipped_raini['time']=utils.extract_filedate(m)
+        clipped_raini.rio.to_raster('../prepro/Majadas/' + m.name)
+        
+def export_tif2netcdf(pathTif2read='../prepro/Majadas'):
+    
+    file_pattern = '*ET-gf*.tif'
+    ET_clipped_filelist = list(Path(pathTif2read).glob(file_pattern))
+    
+    file_pattern = '*ET_0-gf*.tif'
+    ET_0_clipped_filelist = list(Path(pathTif2read).glob(file_pattern))
+    
+    file_pattern = '*TPday*.tif'
+    rain_clipped_filelist = list(Path(pathTif2read).glob(file_pattern))
+    
+    ETa_l = []
+    ETa_dates = []
+    for m in ET_clipped_filelist:
+        ETafi = rxr.open_rasterio(m)
+        ETafi['time']=utils.extract_filedate(m)
+        ETa_l.append(ETafi)
+        ETa_dates.append(ETafi['time'])
+    
+    
+    ETp_l = []
+    ETp_dates = []
+    for m in ET_0_clipped_filelist:
+        ETpfi = rxr.open_rasterio(m)
+        ETpfi['time']=utils.extract_filedate(m)
+        ETp_l.append(ETpfi)
+        ETp_dates.append(ETpfi['time'])
+    
+    rain = []
+    rain_dates = []
+    for m in rain_clipped_filelist:
+        rainfi = rxr.open_rasterio(m)
+        rainfi['time']=utils.extract_filedate(m)
+        rain.append(rainfi)
+        rain_dates.append(rainfi['time'])
+    
+    ETp = xr.concat(ETp_l,dim='time')
+    ETp.to_netcdf('../prepro/ETp_Majadas.netcdf')
+    RAIN = xr.concat(rain,dim='time')
+    RAIN.to_netcdf('../prepro/RAIN_Majadas.netcdf')
+    ETa = xr.concat(ETa_l,dim='time')
+    ETa.to_netcdf('../prepro/ETa_Majadas.netcdf')
+
+def read_prepo_EO_datasets(fieldsite='Majadas'):
+    ETa_ds = xr.open_dataset(f'../prepro/ETa_{fieldsite}.netcdf')
+    ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
+    ETp_ds = xr.open_dataset(f'../prepro/ETp_{fieldsite}.netcdf')
+    ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
+    RAIN_ds = xr.open_dataset(f'../prepro/RAIN_{fieldsite}.netcdf')
+    RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
+    CLC_ds = xr.open_dataset(f'../prepro/CLCover_{fieldsite}.netcdf')
+
+    ds_analysis_EO = ETa_ds.to_dataarray().isel(variable=0,band=0)
+    ds_analysis_EO['ETa'] = ETa_ds.to_dataarray().isel(variable=0,band=0)
+    ds_analysis_EO['ETp'] = ETp_ds.to_dataarray().isel(variable=0,band=0)
+    ds_analysis_EO['RAIN'] = RAIN_ds.to_dataarray().isel(variable=0,band=0)
+    ds_analysis_EO = ds_analysis_EO.drop_vars('spatial_ref', errors='ignore')
+
+    CLC_ds = CLC_ds.drop_vars('spatial_ref', errors='ignore')
+    ds_analysis_EO['CLC_code18'] = CLC_ds.Code_18
+    # ds_analysis_EO.to_netcdf('../prepro/ds_analysis_EO.netcdf')
+    ds_analysis_EO = ds_analysis_EO.sortby('time')
+    
+    nulltimeETa = np.where(ds_analysis_EO.ETa.isel(x=0,y=0).isnull())[0]
+    valid_mask = ~ds_analysis_EO.time.isin(ds_analysis_EO.time[nulltimeETa])
+    
+    if len(nulltimeETa)>1:
+        print('times with null ETa values!!')
+    ds_analysis_EO = ds_analysis_EO.isel(time=valid_mask)
+    
+    print('Errrrrorrr in rain evaluation in the input!')
+    # data_array = data_array.where((data_array <= 300) & (data_array > 0), other=np.nan)
+    ds_analysis_EO['RAIN'] = ds_analysis_EO['RAIN'].where((ds_analysis_EO['RAIN'] <= 300) & (ds_analysis_EO['RAIN'] > 0), 
+                                                          other=0)
+    
+    # Determine the overlapping time range
+    start_time = max(ds_analysis_EO['RAIN'].time.min(), ds_analysis_EO['ETp'].time.min())
+    end_time = min(ds_analysis_EO['RAIN'].time.max(), ds_analysis_EO['ETp'].time.max())
+
+    # Create a mask for the common time range
+    mask_time = (ds_analysis_EO['RAIN'].time >= start_time) & (ds_analysis_EO['RAIN'].time <= end_time)
+    mask_time2 = (ds_analysis_EO['ETp'].time >= start_time) & (ds_analysis_EO['ETp'].time <= end_time)
+
+    # Filter the DataArrays using the mask
+    ds_analysis_EO = ds_analysis_EO.sel(time=mask_time)
+    ds_analysis_EO = ds_analysis_EO.sel(time=mask_time2)
+
+    return ds_analysis_EO

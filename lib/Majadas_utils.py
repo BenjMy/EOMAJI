@@ -8,25 +8,58 @@ import xarray as xr
 import geopandas as gpd
 import rioxarray as rio
 import pandas as pd
+from shapely.geometry import Point
 
 #%%
 
 # SMC field sensors position
 # --------------------------
 
-def import_SWC_pos(path='../data/Majadas_coord_SWC_sensors_Benjamin.csv'):
+def get_SWC_pos(path='../data/TDR/Majadas_coord_SWC_sensors_Benjamin.csv',
+                   target_crs=None):
     '''
     Import SWC content locations Majadas de Tietar
     '''
     coord_SWC_CT = pd.read_csv(path)
     crs = 'EPSG:4326'
-    return coord_SWC_CT, crs
+    
+    col2sel = ['SWC sensor'] +  list(coord_SWC_CT.columns[coord_SWC_CT.columns.str.contains('wgs84')])
+    coord_SWC_CT_WGS84 = coord_SWC_CT[col2sel]
+
+    geometry = [Point(lon, lat) for lon, lat in zip(coord_SWC_CT['longetrs89'], 
+                                                    coord_SWC_CT['latwgs84'])]
+    # Create GeoDataFrame
+    gdf_SWC_CT = gpd.GeoDataFrame(coord_SWC_CT, geometry=geometry)
+
+    # Set the CRS (Coordinate Reference System)
+    # Assuming WGS84 for lat/lon coordinates
+    gdf_SWC_CT.set_crs(epsg=4326, inplace=True)
+    
+    if target_crs is not None:
+        gdf_SWC_CT = gdf_SWC_CT.to_crs(crs=target_crs)
+
+    # fig, ax = plt.subplots()
+    # ETp_ds.isel(band=0,time=0).ETp.plot.imshow(ax=ax)
+    # gdf_SWC_CT.plot(ax=ax,color='r')
+
+    return coord_SWC_CT, gdf_SWC_CT
 
 # Read SMC field sensors
 # ----------------------
+def get_SWC_data(path='../data/TDR/LMA_Meteo_2022-2023_Benjamin.csv'):
+    TDR = pd.read_csv(path)
+    TDR.set_index('rDate',inplace=True)
+    TDR.index = pd.to_datetime(TDR.index, format='%d/%m/%Y %H:%M')
+    TDR_SWC_columns = TDR.columns[TDR.columns.str.startswith('SWC_')]
+    TDR_SWC = TDR[TDR_SWC_columns]
+    # TDR_SWC = TDR_SWC.T
+    
+    # rootName = 'SWC_2014'
+    profilName = ['S','NW','SE','NE']
+    depths = [10,20,40,50,100]
+    bareSoil = ['NW','S']
+    return TDR_SWC, depths
 
-def get_SMC_sensors_dataset():
-    return 
 
 def get_LandCoverMap():
     # get Corine Land Cover map for Majadas 

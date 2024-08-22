@@ -12,4 +12,4 @@ import leafmap
 import contextily as cx
 
 #%%
-HydroPath_path = Path('../data/95732/Results/EU-Hydro.shp/??')
+HydroPath_path = Path('../data/Copernicus_95732/Results/EU-Hydro.shp/??')

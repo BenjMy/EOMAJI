@@ -12,6 +12,8 @@
 
 - real data EOMAJI's field site:
   - [ ] Spain Majadas
+    - define root map with respect to corinne land cover
+    - check simulation inputs
   - [ ] Burkina
   - [ ] Botswana
  
