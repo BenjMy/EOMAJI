@@ -21,9 +21,13 @@ import utils
 import Majadas_utils
 import os
 import argparse
+from matplotlib.animation import FuncAnimation
+from matplotlib import animation
 
 cwd = os.getcwd()
-figPath = Path(cwd) / '../figures/Majadas'
+prj_name = 'Majadas_2024' #Majadas_daily Majadas_2024
+figPath = Path(cwd) / '../figures/' / prj_name
+figPath.mkdir(parents=True, exist_ok=True)
 prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
 
 
@@ -71,10 +75,6 @@ if args.short==True:
 
 
 #%%
-from matplotlib.animation import FuncAnimation
-from matplotlib import animation
-
-
 
 # Get a handle on the figure and the axes
 fig, ax = plt.subplots(figsize=(12,6))
@@ -110,7 +110,7 @@ ani.save(filename=figPath/"ETp.gif",
 plt.close('all')
 hydro_Majadas = CATHY(
                         dirName='../WB_FieldModels/',
-                        prj_name="Majadas"
+                        prj_name=prj_name
                       )
 
 DEM_notopo = np.ones([
@@ -329,13 +329,14 @@ hydro_Majadas.update_soil(
 #%% Run simulation
 len(ds_analysis_EO['Elapsed_Time_s'].values)
 
-resample_times_vtk = ds_analysis_EO['Elapsed_Time_s'].values[np.arange(0,len(ds_analysis_EO['Elapsed_Time_s'].values),30)]
-len(resample_times_vtk)
+# resample_times_vtk = ds_analysis_EO['Elapsed_Time_s'].values[np.arange(0,len(ds_analysis_EO['Elapsed_Time_s'].values),30)]
+# len(resample_times_vtk)
 
 hydro_Majadas.update_parm(
-                        TIMPRTi=resample_times_vtk,
+                        TIMPRTi=ds_analysis_EO['Elapsed_Time_s'].values,
+                        # TIMPRTi=resample_times_vtk,
                         IPRT=4,
-                        VTKF=2,
+                        VTKF=0,
                         )
 
 #%%
@@ -348,232 +349,3 @@ hydro_Majadas.run_processor(
                       verbose=True
                       )
 #%%
-
-cplt.show_vtk_TL(
-                unit="saturation",
-                notebook=False,
-                path= str(Path(hydro_Majadas.workdir) / hydro_Majadas.project_name / "vtk"),
-                show=False,
-                x_units='days',
-                # clim = [0.55,0.70],
-                savefig=True,
-            )
-
-#%%
-# import Majadas_utils
-# from Majadas_utils import get_Majadas_POIs
-majadas_aoi = gpd.read_file('../data/AOI/majadas_aoi.geojson')
-# majadas_aoi.to_crs(RAIN.rio.crs, inplace=True)
-majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
-
-
-#%% Read TDR
-
-coord_SWC_CT, gdf_SWC_CT = Majadas_utils.get_SWC_pos(
-                                                    target_crs=crs_ET
-                                                    )
-
-
-TDR_SWC, depths = Majadas_utils.get_SWC_data()
-TDR_SWC.columns
-# s
-# Majadas_utils.get_SWC_data()
-
-#%%
-SMC_XY = [list(pi) for pi in POIs_coords]
-SMC_XY.append(list(gdf_SWC_CT.iloc[0].geometry.coords[0]))
-# SMC_XY = np.hstack(SMC_XY)
-
-SMC_depths = [-di/100+1 for di in depths] # add altitude of DEM =1 (flat no top case)
-
-
-#%% Plot SMC sensors on top of vtk mesh
-
-# Find the altitudes of the nodes at the mesh positions
-all_nodes_SMC = []
-all_closestPos = []
-
-for idx, (x, y) in enumerate(SMC_XY):
-    _, closest = hydro_Majadas.find_nearest_node([x, y, 0])
-    for d in [SMC_depths[idx]]:
-        SMC_XYZi = [x, y, closest[0][2] - d]
-        nodeId, closest_depth = hydro_Majadas.find_nearest_node(SMC_XYZi)
-        all_nodes_SMC.append(nodeId)
-        all_closestPos.append(closest_depth)
-
-# Convert lists to numpy arrays for easier manipulation
-all_nodes_SMC = np.vstack(all_nodes_SMC)
-all_closestPos = np.vstack(all_closestPos)
-
-# Plot the mesh and the sensor points
-pl = pv.Plotter(notebook=True)
-mesh = pv.read(Path(hydro_Majadas.workdir) / hydro_Majadas.project_name / f'vtk/{hydro_Majadas.project_name}.vtk')
-
-pl.add_mesh(mesh, opacity=0.1)
-
-for i, cp in enumerate(all_closestPos):
-    pl.add_points(cp, color='red',
-                  # markersize=10
-                  )
-pl.show_grid()
-pl.show()
-
-
-#%%
-from pyCATHY.importers import cathy_outputs as out_CT
-
-df_fort777 = out_CT.read_fort777(os.path.join(hydro_Majadas.workdir,
-                                              hydro_Majadas.project_name,
-                                              'fort.777'),
-                                 )
-
-
-#%%
-fig, ax = plt.subplots(1)
-hydro_Majadas.show('spatialET',
-                   ax=ax, 
-                   ti=10,
-                    clim=[0,5e-9],
-                   )
-ax.scatter(np.array(SMC_XY)[:,0],
-           np.array(SMC_XY)[:,1],
-           color='r'
-           )
-
-fig.savefig(figPath/'spatialET_Majadas.png',
-            dpi=300
-            )
-
-#%%
-
-# Get a handle on the figure and the axes
-fig, ax = plt.subplots(figsize=(12,6))
-# Plot the initial frame. 
-cax = hydro_Majadas.show('spatialET',
-                         ax=ax, 
-                         ti=0,
-                         clim=[0,5e-9],
-
-                   )
-ti = df_fort777['time'].unique()[1]
-df_fort777_select_t_xr = df_fort777.set_index(['time','X','Y']).to_xarray()
-df_fort777_select_t_xr = df_fort777_select_t_xr.rio.set_spatial_dims('X','Y')
-
-# Next we need to create a function that updates the values for the colormesh, as well as the title.
-def animate(frame):
-    vi = df_fort777_select_t_xr.isel(time=frame)['ACT. ETRA'].values
-    cax.set_array(vi)
-    ax.set_title("Time = " + str(df_fort777_select_t_xr.coords['time'].values[frame])[:13])
-
-# Finally, we use the animation module to create the animation.
-ani = FuncAnimation(
-    fig,             # figure
-    animate,         # name of the function above
-    frames=100,       # Could also be iterable or list
-    interval=50     # ms between frames
-)
-# To save the animation using Pillow as a gif
-writer = animation.PillowWriter(fps=15,
-                                metadata=dict(artist='Me'),
-                                bitrate=1800)
-ani.save(figPath/'spatialET_Majadas.gif', writer=writer)
-
-#%% Compare ETa from TSEB with ETa from pyCATHY
-
-ETa_poi = df_fort777_select_t_xr.sel(X=all_closestPos[0],
-                                     Y=all_closestPos[1], 
-                                     method="nearest"
-                                    )
-
-ETa_poi_datetimes = filtered_RAIN.time.isel(time=0).values + ETa_poi.time.values
-
-fig, ax = plt.subplots()
-for pi in range(1):
-    ax.plot(ETa_poi_datetimes, 
-            ETa_poi['ACT. ETRA'].isel(X=pi,Y=pi).values*1000*86400,
-            linestyle='--',
-            label='CATHY'
-            )
-
-ETa_TSEB = xr.open_dataset('../prepro/ETa_Majadas.netcdf')
-ETa_TSEB = ETa_TSEB.rename({"__xarray_dataarray_variable__": "ETa_TSEB"})
-ETa_TSEB = ETa_TSEB.to_dataarray().isel(variable=0,band=0).sortby('time')
-
-ETa_TSEB_poi = ETa_TSEB.sel(x=all_closestPos[0],
-                            y=all_closestPos[1], 
-                            method="nearest"
-                            )
-for pi in range(1):
-    ax.plot(ETa_TSEB.time,
-            ETa_TSEB.isel(x=pi,y=pi).values,
-            label='TSEB'
-            )
-ax.set_xlabel('Date')
-ax.set_ylabel('ETa (mm/day)')
-plt.legend()
-fig.savefig(figPath/'ETa_hydro_ETa_Energy_Majadas.png',
-            dpi=300
-            )
-
-#%%
-POROSITY_GUESS = 0.75
-df_sw, _ = hydro_Majadas.read_outputs('sw')
-
-from pyCATHY import cathy_utils
-dates = cathy_utils.change_x2date(df_sw.index.values, 
-                                  filtered_RAIN.time.isel(time=0).values
-                                  )
-
-# Create a figure and the first axis
-# fig, ax = plt.subplots()
-
-# Define the mosaic layout
-mosaic_layout = """
-                a
-                b
-                b
-                b
-                """
-fig, ax = plt.subplot_mosaic(mosaic_layout,
-                             sharex=True,
-                             figsize=(8,4)
-                             )
-
-# Plot the first dataset on the primary y-axis
-ax['b'].plot(dates, df_sw[all_nodes_SMC[0]], 
-             'b-',
-             label=str(all_closestPos[0][2])
-             )  
-ax['b'].plot(dates, df_sw[all_nodes_SMC[1]], 
-             'b--',
-             label=str(all_closestPos[1][2])
-             )  
-ax['b'].legend()
-ax['b'].set_xlabel('time (s)')
-ax['b'].set_ylabel('saturation (-)', color='b')
-ax['b'].tick_params(axis='y', labelcolor='b')
-
-ETp_poi = filtered_ETp.sel(x=all_closestPos[0],
-                           y=all_closestPos[1],
-                           method="nearest")
-
-rain_poi = filtered_RAIN.sel(x=all_closestPos[0],
-                             y=all_closestPos[1], 
-                             method="nearest")
-
-# create here second axis and plot on it 
-
-hydro_Majadas.atmbc['atmbc_df']
-
-
-for pi in range(1):
-    ax['a'].plot(rain_poi.time,
-            rain_poi.isel(x=pi,y=pi).values,
-            )
-ax['a'].invert_yaxis()
-ax['a'].set_ylabel('rain (mm)', color='b')
-
-plt.tight_layout()
-plt.savefig(figPath/'saturation_simu_Majadas.png',
-            dpi=300
-            )

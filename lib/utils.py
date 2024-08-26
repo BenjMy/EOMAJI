@@ -22,6 +22,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 
+from matplotlib.animation import FuncAnimation
+from matplotlib import animation
+from shapely.geometry import mapping
+from scipy import stats
+
 
 def extract_filedate(file_path):
     file_name = file_path.name
@@ -547,3 +552,115 @@ def read_prepo_EO_datasets(fieldsite='Majadas'):
     ds_analysis_EO = ds_analysis_EO.sel(time=mask_time2)
 
     return ds_analysis_EO
+
+
+def spatial_ET_animated(simu,fig,ax):
+    # Plot the initial frame
+    
+    df_fort777 = out_CT.read_fort777(os.path.join(simu.workdir,
+                                                  simu.project_name,
+                                                  'fort.777'),
+                                     )
+    cax = simu.show('spatialET',
+                             ax=ax, 
+                             ti=0,
+                             clim=[0,5e-9],
+    
+                       )
+    ti = df_fort777['time'].unique()[1]
+    df_fort777_select_t_xr = df_fort777.set_index(['time','X','Y']).to_xarray()
+    df_fort777_select_t_xr = df_fort777_select_t_xr.rio.set_spatial_dims('X','Y')
+    
+    # Next we need to create a function that updates the values for the colormesh, as well as the title.
+    def animate(frame):
+        vi = df_fort777_select_t_xr.isel(time=frame)['ACT. ETRA'].values
+        cax.set_array(vi)
+        ax.set_title("Time = " + str(df_fort777_select_t_xr.coords['time'].values[frame])[:13])
+    
+    # Finally, we use the animation module to create the animation.
+    ani = FuncAnimation(
+        fig,             # figure
+        animate,         # name of the function above
+        frames=50,       # Could also be iterable or list
+        interval=50     # ms between frames
+    )
+    # To save the animation using Pillow as a gif
+    writer = animation.PillowWriter(fps=15,
+                                    metadata=dict(artist='Me'),
+                                    bitrate=1800)
+    return ani, writer
+
+
+def plot_time_serie_ETa_CATHY_TSEB(key_cover,
+                                   df_fort777_select_t_xr,
+                                   ds_analysis_EO,
+                                   xPOI, yPOI,
+                                   ax,
+                                   ):
+    
+    # xPOI, yPOI =  gdf_AOI_POI_Majadas.set_index('POI/AOI').loc[key_cover].geometry.coords[0]
+    
+    ETa_poi = df_fort777_select_t_xr.sel(x=xPOI,
+                                         y=yPOI, 
+                                         method="nearest"
+                                        )
+    
+    ETa_poi_datetimes = ds_analysis_EO.time.isel(time=0).values + ETa_poi.time.values
+    
+    ax.plot(ETa_poi_datetimes, 
+            ETa_poi['ACT. ETRA'].values*1000*86400,
+            linestyle='--',
+            label='CATHY'
+            )
+    
+    # ETa_TSEB = xr.open_dataset('../prepro/ETa_Majadas.netcdf')
+    # ETa_TSEB = ETa_TSEB.rename({"__xarray_dataarray_variable__": "ETa_TSEB"})
+    # ETa_TSEB = ETa_TSEB.to_dataarray().isel(variable=0,band=0).sortby('time')
+    
+    ETa_TSEB_poi = ds_analysis_EO.sel(x=xPOI,
+                                    y=xPOI, 
+                                    method="nearest"
+                                    )
+    ax.plot(ETa_TSEB_poi.time,
+            ETa_TSEB_poi.values,
+            label='TSEB'
+            )
+    ax.set_xlabel('Date')
+    ax.set_ylabel('ETa (mm/day)')
+    plt.legend()
+    plt.title(key_cover)
+
+def clip_ET_withLandCover(LCnames,
+                          gdf_AOI,
+                          ETxr,
+                          ETname = 'ACT. ETRA',
+                          crs_ET = None,
+                          axs = None
+                          ):
+    
+    for axi, lcn in zip(axs,LCnames):
+        CLC_mask = gdf_AOI.set_index('POI/AOI').loc[lcn].geometry
+        ETxr = ETxr.rio.write_crs(crs_ET)
+        mask_ETA = ETxr[ETname].rio.clip(CLC_mask.apply(mapping), 
+                                 crs_ET, 
+                                 drop=False
+                                 )
+    
+        ETxr[lcn + '_CLCmask'] = mask_ETA
+        ETxr.isel(time=0)[lcn + '_CLCmask'].plot.imshow(ax=axi,
+                                                        )
+        axi.set_title(lcn)
+        axi.set_aspect('equal')
+        
+    return ETxr
+
+
+def perf_linreg(x,y): 
+    # Perform linear regression using scipy.stats.linregress
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, 
+                                                                   y
+                                                                   )
+    y_pred = slope * x.values + intercept
+    r2 = r_value**2  # Compute R^2 value
+    
+    return y_pred, r2

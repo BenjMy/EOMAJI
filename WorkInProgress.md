@@ -14,7 +14,8 @@
 ### 💧 Water balance/ Land surface **Real field** modeling
 - real data EOMAJI's field site:
   - [ ] Spain Majadas
-    - [ ]define root map with respect to corinne land cover
+    - [x]define root map with respect to corinne land cover
+    - [ ] add EC towers as points of interest
     - [ ] check simulation inputs
     - [ ] compare hydro simulated with TDR real data
     - [ ] interpretation of ETap ratio local/regional VS rain event

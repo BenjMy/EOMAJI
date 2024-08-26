@@ -9,8 +9,78 @@ import geopandas as gpd
 import rioxarray as rio
 import pandas as pd
 from shapely.geometry import Point
+import utils
+from pathlib import Path
 
 #%%
+def get_AOI_POI_Majadas(crs_ET):
+    
+    # AOI define in EOMAJI 
+    # -------------------------------------------------------------------------
+    majadas_aoi = get_Majadas_aoi()
+
+    # POI picked from google earth
+    # -------------------------------------------------------------------------
+    majadas_POIs, POIs_coords = get_Majadas_POIs()
+    labels_POIs = ['Lake',
+                   'Intensive Irrigation',
+                   'Tree-Grass', 
+                   'Agricutural fields'
+                   ]
+    # soil water content sensors
+    # -------------------------------------------------------------------------
+    coord_SWC_CT, gdf_SWC_CT = get_SWC_pos(
+                                            target_crs=crs_ET
+                                            )
+    gdf_SWC_CT['POI/AOI'] = 'SWC sensor'
+
+    # Corinne Land cover dataset
+    # -------------------------------------------------------------------------
+    clc_codes = utils.get_CLC_code_def()
+    CLC_path = Path('../data/Copernicus_95732/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
+    CLC_Majadas = gpd.read_file(CLC_path)
+    CLC_Majadas = CLC_Majadas.to_crs(crs_ET)
+    
+    CLC_clipped = gpd.clip(CLC_Majadas, 
+                            mask=majadas_aoi.total_bounds
+                            # mask= [
+                            #         majadas_aoi.bounds['minx'].values[0],
+                            #         majadas_aoi.bounds['miny'].values[0],
+                            #         majadas_aoi.bounds['maxx'].values[0] #+300,
+                            #         majadas_aoi.bounds['maxy'].values[0] #+300,    
+                            #         ]
+                            )
+    mask_agroforestry = CLC_clipped['Code_18'] == '244'
+    mask_irrigated = CLC_clipped['Code_18'] == '212'
+    agroforestry_landcover = CLC_clipped[mask_agroforestry]
+    irrigated_landcover = CLC_clipped[mask_irrigated]
+    agroforestry_landcover.to_crs(gdf_SWC_CT.crs, inplace=True)
+    irrigated_landcover.to_crs(gdf_SWC_CT.crs, inplace=True)
+    agroforestry_landcover['POI/AOI'] = 'agroforestry'
+    irrigated_landcover['POI/AOI'] = 'irrigated'
+    
+    # Create geodataframe
+    # -------------------------------------------------------------------------
+    gdf_AOI_POI_Majadas = gpd.GeoDataFrame(
+                                        labels_POIs, 
+                                        geometry=gpd.points_from_xy(POIs_coords[:,0], 
+                                                                    POIs_coords[:,1]), 
+                                        crs=gdf_SWC_CT.crs
+                                        )
+    gdf_AOI_POI_Majadas.rename({0:'id'})
+    gdf_AOI_POI_Majadas = gdf_AOI_POI_Majadas.rename({0:'POI/AOI'},axis=1)
+    
+    gdf_AOI_POI_Majadas = pd.concat([gdf_AOI_POI_Majadas,
+                                     gdf_SWC_CT,
+                                     agroforestry_landcover,
+                                     irrigated_landcover
+                                     ],
+                                    ignore_index=True
+                                    )
+    
+    print('add towers water footprint areas')
+    return gdf_AOI_POI_Majadas
+
 
 # SMC field sensors position
 # --------------------------
