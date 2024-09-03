@@ -1062,6 +1062,24 @@ def plot_accounting_summary_analysis(axs,
                alpha=0.7
                )
         
+        ax3 = axs[2,i].twinx()
+
+        cumsum_netIrr = df_Net_irr_IN_1D.netIrr.cumsum()
+        ax3.plot(netIrr['time'].dt.days[:], 
+                cumsum_netIrr, 
+                color='k', 
+                linestyle='--'
+                   )
+        
+        ax3.plot(grid_xr_EO['irr_daily'].time_days.values, 
+                grid_xr_EO['irr_daily'].sel(
+                                            x=irr_patch_centers[j][0], 
+                                            y=irr_patch_centers[j][1], 
+                                            ).cumsum().values*86400*1000, 
+                color='k', 
+                linestyle='-'
+                   )
+        
         (non_zero_indices, 
          first_non_zero_time_days, 
          first_non_zero_value) = utils.get_irr_time_trigger(grid_xr_EO,
@@ -1117,4 +1135,15 @@ def plot_accounting_summary_analysis(axs,
                edgecolor='k', 
                alpha=0.7
                )
+    
+    cumsum_mean_netIrr = netIrr.mean(dim=['x','y']).cumsum()*86400*1000
+
+    ax3 = axs[2,-1].twinx()
+
+    ax3.plot(netIrr['time'].dt.days[:], 
+            cumsum_mean_netIrr, 
+            color='k', 
+            linestyle='--'
+               )
+    
     pass 

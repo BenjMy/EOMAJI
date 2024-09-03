@@ -15,14 +15,20 @@
 
 ### 💧 Water balance/ Land surface **Synthetic** modeling
 
-- [ ] Detecting event and classify!
+- [x] Detecting event and classify!
 - [ ] Water **quantification**: this can be done to a daily/weekly/monthly scale
 - [ ] Plot depletion + runoff
-- [ ] Use ERA5 to create relevant scenario of ETp (see paper Italian) - ERA5 xarray?
-ERA5 Land soil moisture simulator luca brocca: Simulator of ERA5 Land soil moisture in the 0-100 cm soil layer (results in the first comment) and I have created 3 scenario by using the climatology 1991-2020: +/- 20% of precipitation, +25% air temperature (as observed in the last years).
-See: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview  --> Mean potential evaporation rate	kg m-2 s-1
+
+
+- [ ] Long term synthetic water balance modelling (some months)
+  - [ ] create and define how many rain events/ irrigation events
+    - [ ] define **delineation errors** as the difference between (nb of events detected - nb of events)/nb of events
+    - [ ] define **quantification errors** as the difference between (mm irr. detected - mm. irr applied)/nb of events
+  - Use ERA5 to create relevant scenario of ETp (see paper Italian) - ERA5 xarray? ERA5 Land soil moisture simulator luca brocca: Simulator of ERA5 Land soil moisture in the 0-100 cm soil layer (results in the first comment) and I have created 3 scenario by using the climatology 1991-2020: +/- 20% of 		 precipitation, +25% air temperature (as observed in the last years). See: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview  --> Mean potential evaporation rate	kg m-2 s-1
  
 - [ ] Varying nb of earth observations --> impact on detection (plot in July)
+- [ ] Varying EO resolutions --> impact on detection (plot in July)
+
 
 - [x] Net irrigation accounting plot 1D
 - [ ] July plot with event classification
@@ -30,6 +36,7 @@ See: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-l
 - [x] convert units to mm/day
 
 **Scenario i**
+- [ ] varying **initial conditions**
 - [ ] non homogeneous soil conditions:  This imply using simu.update_zones()
 - [ ] non homogeneous vegetation type conditions (coupling with DAISY?)
   This imply using simu.update_root_map()

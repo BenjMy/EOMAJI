@@ -66,7 +66,7 @@ def get_cmd():
     process_param.add_argument('-scenario_nb', 
                                type=int, 
                                help='scenario_nb',
-                               default=1, 
+                               default=2, 
                                required=False
                                ) 
     # process_param.add_argument('-WTD', type=float, help='WT height',
@@ -275,10 +275,40 @@ fig.savefig(os.path.join(figpath,
             dpi=300,
             )
 
-      
+#%% Apply EO rules
+
+def apply_EO_rules(ds_analysis_EO,sc_EO):
+    
+    if 'EO_resolution' in sc_EO:
+        # Assume sc_EO['EO_resolution'] is the desired new resolution (e.g., 30 meters)
+        new_resolution_x = sc_EO['EO_resolution']
+        new_resolution_y = sc_EO['EO_resolution']
+        
+        # Calculate the scale factors (coarsening factors) based on the current resolution and desired resolution
+        scale_factor_x = int(new_resolution_x / ds_analysis_EO.rio.resolution()[0])
+        scale_factor_y = int(new_resolution_y / ds_analysis_EO.rio.resolution()[1])
+        
+        # Resample the DataArray to the new resolution
+        ds_analysis_EO_ruled = ds_analysis_EO.coarsen(
+            x=scale_factor_x, 
+            y=scale_factor_y, 
+            boundary="trim"
+        ).mean()
+        
+        # fig, axs = plt.subplots(1,2)
+        # ds_analysis_EO['ACT. ETRA'].isel(time=5).plot.imshow(ax=axs[0])
+        # ds_analysis_EO_ruled['ACT. ETRA'].isel(time=5).plot.imshow(ax=axs[1])
+    if 'EO_freq_days' in sc_EO:
+        
+    return ds_analysis_EO_ruled
+
+
+# ds_analysis_EO_ruled = utils.apply_EO_rules(ds_analysis_EO,sc_EO)
+ds_analysis_EO_ruled = apply_EO_rules(ds_analysis_EO,sc_EO)
+
 #%% irrigation_delineation
 
-event_type = utils.irrigation_delineation(ds_analysis_EO) 
+event_type = utils.irrigation_delineation(ds_analysis_EO_ruled) 
    
 #%% Plot timeline 
 ncols = 4

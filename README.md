@@ -17,6 +17,8 @@ other factors (e.g. change in weather or vegetation cover).
 
 
 ## Synthetic TWIN water accounting models
+
+### Simple scenario (10 days)
 We conducted experiments involving synthetic scenarios to assess their detectability with: 
 - varying sizes and levels of irrigation
 - different frequencies of evapotranspiration (EO)
@@ -26,6 +28,17 @@ The results indicate that establishing thresholds based on the **ratio of actual
 Future work: 
 - introducing heterogeneities into the soil structure, which will be addressed using a data assimilation approach to calibrate the model during rainfed seasons. 
 This calibration will help characterize soil properties and serve as a baseline model for simulations during the irrigation season.
+
+### Scenario based on historical data 
+
+Using the Climate Data Store (CDS) API: https://cds-beta.climate.copernicus.eu/how-to-api
+
+- ERA5 hourly data on single levels from 1940 to present
+- Crop productivity and evapotranspiration indicators from 2000 to present derived from satellite observations
+
+
+`pip install cdsapi´
+
 
 
 ## Real field sites water accounting

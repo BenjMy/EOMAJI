@@ -39,7 +39,7 @@ rain_length_days = 2 # irrigation length in sec
 # EARTH OBSERVATIONS PARM
 # -----------------------
 EO_freq_days = 1
-
+EO_resolution = 30
 
 # DELINEATION ANALYSIS PARAMETERS
 # -------------------
@@ -95,6 +95,7 @@ def load_s0():
                 # EARTH OBSERVATIONS PARM
                 # -----------------------
                 'EO_freq_days': EO_freq_days,
+                'EO_resolution': EO_resolution,
                 
                 # DELINEATION ANALYSIS PARAMETERS
                 # --------------------------------
@@ -141,7 +142,7 @@ def load_s2():
                 'irr_flow': [irr_flow,irr_flow,irr_flow],
                 'irr_center_point_x': [200,300,650], # in m
                 'irr_center_point_y': [800,250,650], # in m
-                'irr_square_size': [100,200,300],
+                'irr_square_size': [10,50,100],
                 'ZROOT': [1,0.3,0.3,0.3],
 
     }

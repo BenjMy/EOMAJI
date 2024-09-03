@@ -140,7 +140,9 @@ fig, axs = plt.subplots(3,nb_irr_areas+1,
                         sharey=False,
                         figsize=(16,6)
                         )
-    
+grid_xr_EO['irr_daily']
+# 3e-7*86400*1000
+
 utils.plot_accounting_summary_analysis(
                                         axs,
                                          irr_patch_centers,
@@ -153,6 +155,11 @@ utils.plot_accounting_summary_analysis(
                                          ETp,
                                          grid_xr_EO,
                                     )
+fig.savefig(os.path.join(figpath,
+                         'plot_accounting_summary_analysis.png'
+                         ),
+            dpi=300,
+            )
 
 #%% Plot runoff
 plt.close('all')

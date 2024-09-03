@@ -228,8 +228,8 @@ def prepare_scenario(scenario,with_irrigation=True):
 def set_regional_domain():
     x_dim = 1 * 1e3  # length in m
     y_dim = 1 * 1e3  # length in m
-    x_spacing = 30  # x discretisation in m
-    y_spacing = 30
+    x_spacing = 10  # x discretisation in m
+    y_spacing = 10
     region_domain = {
         'x_dim': x_dim,
         'y_dim': y_dim,
