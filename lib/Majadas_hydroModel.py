@@ -25,10 +25,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib import animation
 
 cwd = os.getcwd()
-prj_name = 'Majadas_2024' #Majadas_daily Majadas_2024
-figPath = Path(cwd) / '../figures/' / prj_name
-figPath.mkdir(parents=True, exist_ok=True)
-prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
+# prj_name = 'Majadas_2024_WTD1' #Majadas_daily Majadas_2024
 
 
 #%%
@@ -36,12 +33,14 @@ prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
 def get_cmd():
     parse = argparse.ArgumentParser()
     process_param = parse.add_argument_group('process_param')
+    process_param.add_argument('-prj_name', type=str, help='prj_name',
+                        default='Majadas_test', required=False) 
     process_param.add_argument('-het_soil', type=int, help='Heterogeneous soil',
                         default=1, required=False) 
     process_param.add_argument('-WTD', type=float, help='WT height',
                         # default=100, required=False) 
                         # default=4, required=False) 
-                        default=99, required=False) 
+                        default=2, required=False) 
     process_param.add_argument('-ic', type=int, help='Heterogeneous ic',
                         default=1, required=False) 
     process_param.add_argument('-short', type=int, help='select only one part of the dataset',
@@ -56,6 +55,11 @@ def get_cmd():
 
 args = get_cmd()   
 
+figPath = Path(cwd) / '../figures/' / args.prj_name
+figPath.mkdir(parents=True, exist_ok=True)
+prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
+
+
 #%% Import input data 
 
 ds_analysis_EO = utils.read_prepo_EO_datasets(fieldsite='Majadas')
@@ -67,7 +71,7 @@ ET_test = rxr.open_rasterio(ET_0_filelist[0])
 
 
 if args.short==True:
-    cutoffDate = ['01/01/2023','01/01/2024']
+    cutoffDate = ['01/01/2023','01/03/2024']
     start_time, end_time = pd.to_datetime(cutoffDate[0]), pd.to_datetime(cutoffDate[1])
     mask_time = (ds_analysis_EO.time >= start_time) & (ds_analysis_EO.time <= end_time)
     # Filter the DataArrays using the mask
@@ -110,7 +114,7 @@ ani.save(filename=figPath/"ETp.gif",
 plt.close('all')
 hydro_Majadas = CATHY(
                         dirName='../WB_FieldModels/',
-                        prj_name=prj_name
+                        prj_name=args.prj_name
                       )
 
 DEM_notopo = np.ones([
@@ -227,11 +231,17 @@ hydro_Majadas.update_nansfneubc(no_flow=True)
 hydro_Majadas.update_sfbc(no_flow=True)
 
 #%%
+# hydro_Majadas.update_ic(
+#                         INDP=0, 
+#                         IPOND=0, 
+#                         pressure_head_ini=-10
+#                     )
+
 hydro_Majadas.update_ic(
-                        INDP=0, 
-                        IPOND=0, 
-                        pressure_head_ini=-10
+                        INDP=4, 
+                        WTPOSITION=args.WTD, 
                     )
+
 
 #%%
 # hydro_Majadas.update_soil()
@@ -299,24 +309,15 @@ except:
     SPP, FP = hydro_Majadas.read_inputs('soil',MAXVEG=len(np.unique(mapped_data))) #,MAXVEG=15)
     FP_new = FP
 
-# FP_new['CLC']=None
-# FP_new['Code_18']=None
-print('This is wrongggg!')
 for rd in replacement_dict.keys():
-    # if replacement_dict[rd]<=len(np.unique(mapped_data)):
-    # print(rd)
     if rd != 'nodata':
         code_str = CLC_codes[rd]
-        # print(code_str)
         Rootdepth = CLC_root_depth[code_str]
     else:
         Rootdepth = 0
     idveg = replacement_dict[rd] - min_veg_data_shift +1
-#     print(idveg,code_str)
     if np.sum((idveg==FP_new.index))==1:
         FP_new.loc[idveg,'ZROOT'] = Rootdepth
-        # FP_new.loc[idveg,'CLC'] = code_str
-        # FP_new.loc[idveg,'Code_18'] = rd
 
 hydro_Majadas.update_soil(
                             PMIN=-1e35,

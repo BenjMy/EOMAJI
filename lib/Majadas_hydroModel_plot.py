@@ -24,8 +24,8 @@ from shapely.geometry import mapping
 from scipy import stats
 
 cwd = os.getcwd()
-# prj_name = 'Majadas_daily'
-prj_name = 'Majadas_2024'
+prj_name = 'Majadas_daily_WTD2' # Majadas_daily_WTD1 Majadas_2024_WTD1 
+# prj_name = 'Majadas_2024_WTD1'
 figPath = Path(cwd) / '../figures/' / prj_name
 figPath.mkdir(parents=True, exist_ok=True)
 
@@ -50,7 +50,6 @@ ET_test = rxr.open_rasterio(ET_0_filelist[0])
 #%% Get areas and point of interest 
 
 gdf_AOI_POI_Majadas = Majadas_utils.get_AOI_POI_Majadas(crs_ET)
-
 majadas_aoi = gpd.read_file('../data/AOI/majadas_aoi.geojson')
 majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
 
@@ -68,16 +67,20 @@ for geom, indexPOI in zip(gdf_AOI_POI_Majadas[is_point].geometry,gdf_AOI_POI_Maj
 # gdf_AOI_POI_Majadas['meshNode']
 
 #%%
-
-
-POROSITY_GUESS = 0.75
+POROSITY_GUESS = 0.55
+#%%
 df_sw, _ = hydro_Majadas.read_outputs('sw')
+df_psi = hydro_Majadas.read_outputs('psi')
 
+#%%
 from pyCATHY import cathy_utils
 dates = cathy_utils.change_x2date(df_sw.index.values, 
-                                  ds_analysis_EO.time.isel(time=0).values
+                                   ds_analysis_EO.time.isel(time=0).values,
+                                  # start_date = '2023-01-01',
+                                  formatIn = '%Y-%m-%d',
+                                  formatOut="%Y-%m-%d"
                                   )
-
+# len(df_sw.index.values)
 # Create a figure and the first axis
 # fig, ax = plt.subplots()
 #%% Read TDR field sensors
@@ -96,7 +99,32 @@ gdf_AOI_POI_Majadas.set_index('SWC sensor').loc[SWC_pos_root]['meshNode']
 
 #%%
 
-# dd
+gdf_AOI_POI_Majadas['meshNode'] = None
+for geom, indexPOI in zip(gdf_AOI_POI_Majadas[is_point].geometry,gdf_AOI_POI_Majadas[is_point].index):
+    x, y = geom.coords[0]
+    meshNodePOI, closest = hydro_Majadas.find_nearest_node([x,y, np.max(DEM)])
+    gdf_AOI_POI_Majadas.loc[indexPOI,'meshNode'] = meshNodePOI[0]
+
+    
+x, y =  gdf_AOI_POI_Majadas.iloc[4].geometry.coords[0]
+# depths = [5,50,100,200]
+depths = [5,100,400]
+
+hydro_Majadas.grid3d
+
+grid3d = hydro_Majadas.read_outputs('grid3d')
+# grid3d['mesh3d_nodes'][meshNodes2plot]
+
+meshNodes2plot = []
+for d in depths:
+    meshNodePOI, closest = hydro_Majadas.find_nearest_node([x,y, np.max(DEM)-d/100])
+    meshNodes2plot.append(meshNodePOI)
+#%%
+rain = ds_analysis_EO['RAIN'].mean(dim=['x','y'])
+
+
+
+#%%
 # Define the mosaic layout
 mosaic_layout = """
                 a
@@ -108,65 +136,46 @@ fig, ax = plt.subplot_mosaic(mosaic_layout,
                              sharex=True,
                              figsize=(8,4)
                              )
-# gdf_AOI_POI_Majadas.set_index('POI/AOI').columns
-# Plot the first dataset on the primary y-axis
 
-meshNodes2plot = gdf_AOI_POI_Majadas.set_index('POI/AOI').loc['SWC sensor']['meshNode']
-for node in meshNodes2plot.values:
+ax['a'].bar(rain.time,
+            rain.values,
+        )
+ax['a'].invert_yaxis()
+ax['a'].set_ylabel('rain (mm)', color='k')
+ax['a'].yaxis.label.set_color('k')
+ax['a'].tick_params(axis='y', colors='k')
+
+
+styles = ['-','--','-.']
+for i, node in enumerate(meshNodes2plot):
     # print(i)
-    ax['b'].scatter(dates.values, 
+    ax['b'].plot(dates, 
                     df_sw[node].values*POROSITY_GUESS*100, 
-                    # label=gdf_SWC_CT['SWC sensor'][i]
+                    color='darkblue',
+                    linestyle = styles[i]
                     )  
-    
-# depths = [5,10,20,40,50,100]
-depths = [5,50,100]
+ax['b'].set_ylabel('Estimated SMC', color='darkblue')
+# Set color of the right y-axis ticks and label
+ax['b'].yaxis.label.set_color('darkblue')
+ax['b'].tick_params(axis='y', colors='darkblue')
+ax['b'].legend(labels=depths)
 
-for di in depths:
-    TDR_SWC[f'{SWC_pos_root}_{di}cm'].plot(ax=ax['b'],
-                                           label=str(di)
-                                           )
-
-
-ax['b'].legend()
-ax['b'].set_xlabel('time (s)')
-ax['b'].set_ylabel('SMC (-)', color='b')
-ax['b'].tick_params(axis='y', labelcolor='b')
-
-
-# rain_poi =  ds_analysis_EO['RAIN'].sel(x=all_closestPos[0],
-#                              y=all_closestPos[1], 
-#                              method="nearest")
-
-# create here second axis and plot on it 
-
-# hydro_Majadas.atmbc['atmbc_df']
-
-# df_sw.Time
-
-# for pi in range(1):
-#     ax['a'].plot(rain_poi.time,
-#                  rain_poi.isel(x=pi,y=pi).values,
-#                  )
-# ax['a'].invert_yaxis()
-# ax['a'].set_ylabel('rain (mm)', color='b')
-
+depths_field = [5,100]
+ax_b_right = ax['b'].twinx()
+for i, di in enumerate(depths_field):
+    ax_b_right.plot(TDR_SWC.index, 
+                    TDR_SWC[f'{SWC_pos_root}_{di}cm'], 
+                    color='k',
+                    linestyle = styles[i],
+                    label = str(di)
+                    ) 
+ax_b_right.set_ylabel('Measured SMC')
+# plt.legend()
 plt.tight_layout()
 plt.savefig(figPath/'saturation_simu_Majadas.png',
             dpi=300
             )
-
 #%%
-df_psi = hydro_Majadas.read_outputs('psi')
-
-from pyCATHY import cathy_utils
-dates = cathy_utils.change_x2date(df_psi.index.values, 
-                                  ds_analysis_EO.time.isel(time=0).values
-                                  )
-
-# Create a figure and the first axis
-# fig, ax = plt.subplots()
-
 # Define the mosaic layout
 mosaic_layout = """
                 a
@@ -178,14 +187,21 @@ fig, ax = plt.subplot_mosaic(mosaic_layout,
                              sharex=True,
                              figsize=(8,4)
                              )
+
+rain = ds_analysis_EO['RAIN'].mean(dim=['x','y'])
+
+ax['a'].bar(rain.time,
+            rain.values,
+        )
+ax['a'].invert_yaxis()
+ax['a'].set_ylabel('rain (mm)', color='b')
+
 # gdf_AOI_POI_Majadas.set_index('POI/AOI').columns
 # Plot the first dataset on the primary y-axis
-for node in gdf_AOI_POI_Majadas.set_index('POI/AOI').loc['SWC sensor']['meshNode'][0]:
-    # print(i)
+for node in meshNodes2plot:
     ax['b'].plot(dates, 
                  df_psi[node], 
                  'b-',
-                 # label=gdf_SWC_CT['SWC sensor'][i]
                  )  
 
 ax['b'].legend()
@@ -254,8 +270,8 @@ df_fort777 = out_CT.read_fort777(os.path.join(hydro_Majadas.workdir,
                                               hydro_Majadas.project_name,
                                               'fort.777'),
                                  )
-df_fort777_select_t_xr = df_fort777.set_index(['time','Y','X']).to_xarray()
-df_fort777_select_t_xr = df_fort777_select_t_xr.rename({'Y': 'y','X':'x'})
+df_fort777_select_t_xr = df_fort777.set_index(['time','y','x']).to_xarray()
+# df_fort777_select_t_xr = df_fort777_select_t_xr.rename({'Y': 'y','X':'x'})
 
 # df_fort777_select_t_xr = df_fort777_select_t_xr.rio.set_spatial_dims('y','x', inplace=True)
 

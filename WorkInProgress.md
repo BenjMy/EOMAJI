@@ -3,24 +3,55 @@
 
 ## Processing
 
-### Issues 
+### Issues
+
+**TWIN simulations** 
 - [ ] July calendar only works for matplolib 3.7
 
+- [x] Problem with calculation of net atmbc from xarray grid !! Only for irrigation simu (meaning the problem can be too high irrigation rate)
+- [x] Problem when changing number of zones/ soil
+
+- [ ] Issue with plot psi = f(time days). Values are shifted compare to real irrigations times.
+
 ### 💧 Water balance/ Land surface **Synthetic** modeling
+
+- [ ] Detecting event and classify!
+- [ ] Water **quantification**: this can be done to a daily/weekly/monthly scale
+- [ ] Plot depletion + runoff
+- [ ] Use ERA5 to create relevant scenario of ETp (see paper Italian) - ERA5 xarray?
+ERA5 Land soil moisture simulator luca brocca: Simulator of ERA5 Land soil moisture in the 0-100 cm soil layer (results in the first comment) and I have created 3 scenario by using the climatology 1991-2020: +/- 20% of precipitation, +25% air temperature (as observed in the last years).
+See: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview  --> Mean potential evaporation rate	kg m-2 s-1
+ 
+- [ ] Varying nb of earth observations --> impact on detection (plot in July)
+
 - [x] Net irrigation accounting plot 1D
 - [ ] July plot with event classification
+- [ ] 5000*5000 domain pixels
+- [x] convert units to mm/day
 
+**Scenario i**
+- [ ] non homogeneous soil conditions:  This imply using simu.update_zones()
+- [ ] non homogeneous vegetation type conditions (coupling with DAISY?)
+  This imply using simu.update_root_map()
+For both it is necessary to write the soil file accordingly
+
+**Scenario i**
+- [ ] simulating **microWaves**: only account for the 5cm topsoil moisture, using an adequate CATHY mesh to showcase the drawbacks!
+  Same mesh but below 5 cm add boundary condition of fix neumann + dirichlet -->  psi = -200 (very dry soil no water) + >> flux to drive the water up?
+
+**Scenario i**
+- [ ] irrigation amount
 
 ### 💧 Water balance/ Land surface **Real field** modeling
 - real data EOMAJI's field site:
-  - [ ] Spain Majadas
+  - [ ] **Spain Majadas**
     - [x]define root map with respect to corinne land cover
     - [ ] add EC towers as points of interest
-    - [ ] check simulation inputs
+    - [x] check simulation inputs
     - [ ] compare hydro simulated with TDR real data
-    - [ ] interpretation of ETap ratio local/regional VS rain event
+    - [ ] **CLASSIFY** interpretation of ETap ratio local/regional VS rain/irrigation event
     - [ ] DA with soil and root update during rainfed season
-
+    - [ ] Use/Implement Couvreur root water uptake model to account for compensation/competion
   - [ ] Burkina
     - [ ] 📌 Clip to AOI
   - [ ] Botswana

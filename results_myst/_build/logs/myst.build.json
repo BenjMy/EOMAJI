@@ -3,7 +3,7 @@
     "files": [],
     "opts": {
       "execute": false,
-      "pdf": true,
+      "pdf": false,
       "tex": false,
       "typst": false,
       "docx": false,
@@ -20,68 +20,9 @@
       "strict": false,
       "ci": false,
       "maxSizeWebp": 1572864
-    }
+    },
+    "performSiteBuild": true
   },
-  "exports": [
-    {
-      "format": "pdf",
-      "output": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/_build/exports/background.pdf",
-      "articles": [
-        {
-          "file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/0_background.md",
-          "level": 0
-        }
-      ],
-      "$file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/0_background.md",
-      "$project": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst"
-    },
-    {
-      "format": "pdf",
-      "output": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/_build/exports/results-sc0.pdf",
-      "articles": [
-        {
-          "file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/1_results_SC0.md",
-          "level": 0
-        }
-      ],
-      "$file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/1_results_SC0.md",
-      "$project": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst"
-    },
-    {
-      "format": "pdf",
-      "output": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/_build/exports/results-sc1.pdf",
-      "articles": [
-        {
-          "file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/1_results_SC1.md",
-          "level": 0
-        }
-      ],
-      "$file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/1_results_SC1.md",
-      "$project": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst"
-    },
-    {
-      "format": "pdf",
-      "output": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/_build/exports/synthetic-delineation.pdf",
-      "articles": [
-        {
-          "file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/1_synthetic_delineation.md",
-          "level": 0
-        }
-      ],
-      "$file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/1_synthetic_delineation.md",
-      "$project": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst"
-    },
-    {
-      "format": "pdf",
-      "output": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/_build/exports/z-synthetic-da.pdf",
-      "articles": [
-        {
-          "file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/99Z_synthetic_DA.md",
-          "level": 0
-        }
-      ],
-      "$file": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst/99Z_synthetic_DA.md",
-      "$project": "/home/z0272571a@CAMPUS.CSIC.ES/Nextcloud/BenCSIC/Codes/BenjMy/EOMAJI/results_myst"
-    }
-  ]
+  "exports": [],
+  "buildSite": true
 }

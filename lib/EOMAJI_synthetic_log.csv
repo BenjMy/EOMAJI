@@ -1,2 +1,2 @@
-PMIN,pressure_head_ini,ETp,nb_days,nb_hours_ET,nb_irr_zones,irr_time_index,irr_length,irr_flow,EO_freq_days,ETp_window_size_x,ETp_window_size_y,threshold_localETap,threshold_regionalETap
--1e+30,-200.0,-1e-07,10.0,8.0,1.0,3.0,10800.0,3e-07,1.0,10.0,10.0,0.3,0.3
+PMIN,pressure_head_ini,ETp,nb_days,nansfdirbc,nansfneubc,sfbc,nb_irr_zones,irr_time_index,irr_flow,irr_center_point_x,irr_center_point_y,irr_square_size,EO_freq_days,ETp_window_size_x,ETp_window_size_y,threshold_localETap,threshold_regionalETap,rain_flow,rain_time_index
+-1e+30,-200,-1e-07,10,no_flow,no_flow,no_flow,1,[3],[3e-07],[500],[500],[300],1,10,10,0.3,0.3,[6e-07],[6]

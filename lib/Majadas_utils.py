@@ -78,7 +78,7 @@ def get_AOI_POI_Majadas(crs_ET):
                                     ignore_index=True
                                     )
     
-    print('add towers water footprint areas')
+    print('add towers water footprint areas?!')
     return gdf_AOI_POI_Majadas
 
 
