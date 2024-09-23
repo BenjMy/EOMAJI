@@ -31,6 +31,33 @@ This work focus on the Majadas field site (Spain) water accounting.
 - Eddy Covariance Towers are installed and were previously used to validate the TSEB outputs 
 - Soil water content sensors 
 
+```{figure} ../figures/Majadas_daily_WTD2/root_map_Majadas.png
+:class: bg-primary
+:width: 600px
+:alt: root_map_Majadas
+
+root_map_Majadas
+```
+
+```{figure} ../figures/Majadas_daily_WTD2/ETp.gif
+:class: bg-primary
+:width: 600px
+:alt: ETp
+
+ETp_Majadas
+```
+
+
+```{figure} ../figures/Majadas_daily_WTD2/agroforestry_MASK_mean_ETa_hydro_ETa_Energy_Majadas_daily_WTD2.png
+:class: bg-primary
+:width: 600px
+:alt: ETp
+
+ETp_Majadas
+```
+
+
+
 ## WB Model description
 - From October 2018 to Dec 2022 at daily scale
 - DEM is simplified with a flat surface, cell resolution is given by the resolution of the ETp i.e. 300m
@@ -40,7 +67,4 @@ This work focus on the Majadas field site (Spain) water accounting.
 - Root depth is defined according to Land cover type (arbitrary)
 - Initial conditions are estimated from SMC sensors (?)
 
-## DA Model description
-- Objective: calibrate soil + root physical properties (during rainfed season)
-- Observations to assimilate: SMC, ETa (derived from TSEB)
 

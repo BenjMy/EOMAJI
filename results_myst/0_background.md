@@ -42,6 +42,15 @@ therefore is mainly influenced by irrigation or rainfall events.
 
 This is achieved by first calculating the change in **ETa/p** between the time on which irrigation is to be detect and most recent previous time on which ET estimates are available. This change is **calculated both locally (i.e. at individual pixel level) and regionally** (i.e. as an average change in all agricultural pixels within 10 km window). 
 
+
+```{figure} ../img/EO-MAJI-IrrDelineation.png
+:class: bg-primary
+:width: 600px
+:alt: EO-MAJI-IrrDelineation
+
+EO-MAJI-IrrDelineation
+```
+
 The local and regional changes are then **compared to a number of thresholds** to try to detect if:
 - a) There is no input of water into the soil (e.g. local ETa/p does not increase above a threshold)
 - b) There is input of water into the soil but due to rainfall (e.g. increase in regional ETa/p is over a
@@ -54,13 +63,7 @@ of thresholds. Since irrigation is normally applied on a larger area, the raster
 irrigation events is cleaned up by removing isolated pixels in which irrigation was detected.
 
 
-```{figure} ../img/EO-MAJI-IrrDelineation.png
-:class: bg-primary
-:width: 300px
-:alt: EO-MAJI-IrrDelineation
 
-EO-MAJI-IrrDelineation
-```
 
 
 ```{figure} ../img/EO-MAJI-IrrNet.png

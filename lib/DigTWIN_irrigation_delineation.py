@@ -60,13 +60,19 @@ def get_cmd():
     process_param.add_argument('-run_process', 
                                type=int, 
                                help='run_process',
-                               default=0, 
+                               default=1, 
                                required=False
                                ) 
     process_param.add_argument('-scenario_nb', 
                                type=int, 
                                help='scenario_nb',
-                               default=2, 
+                               default=0, 
+                               required=False
+                               ) 
+    process_param.add_argument('-AQUACROP', 
+                               type=int, 
+                               help='scenario AQUACROP',
+                               default=0, 
                                required=False
                                ) 
     # process_param.add_argument('-WTD', type=float, help='WT height',
@@ -91,6 +97,10 @@ sc_df = pd.read_csv('EOMAJI_synthetic_log.csv',index_col=False)
 
 #%% Paths
 prj_name = 'EOMAJI_' + str(args.scenario_nb)
+# prj_name = 'EOMAJI_AquaCrop' + str(args.scenario_nb)
+if args.AQUACROP:
+    prj_name = 'EOMAJI_AquaCrop' + str(args.scenario_nb)
+
 # figpath = os.path.join('../figures/',prj_name)
 figpath = Path('../figures/scenario' + str(args.scenario_nb))
 
@@ -298,7 +308,7 @@ def apply_EO_rules(ds_analysis_EO,sc_EO):
         # fig, axs = plt.subplots(1,2)
         # ds_analysis_EO['ACT. ETRA'].isel(time=5).plot.imshow(ax=axs[0])
         # ds_analysis_EO_ruled['ACT. ETRA'].isel(time=5).plot.imshow(ax=axs[1])
-    if 'EO_freq_days' in sc_EO:
+    # if 'EO_freq_days' in sc_EO:
         
     return ds_analysis_EO_ruled
 

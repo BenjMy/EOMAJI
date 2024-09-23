@@ -40,6 +40,16 @@ EO-MAJI-IrrDelineation
 - The soil is homogeneous all over the regional domain.
 - **At time 0**, the soil is dry with an initial pressure head of -30m that is equivalent to a saturation level of 0.3?.
 
+
+
+```{figure} ../figures/scenario0/root_map
+:class: bg-primary
+:width: 600px
+:alt: root_map
+
+Irrigation areas
+```
+
 **Atmospheric Boundary conditions**
 - The irrigation consist in a single event at ?? sec (day ??). 
 - The irrigation rate is **5e-07** m/s during **21600** sec. This is equivalent to 43.2 mm/day during 6hours. 
@@ -77,14 +87,6 @@ SAME AS previous figure but outside the irrigation area.
 ```
 
 
-```{figure} ../figures/scenario0/ratioETap_withIRR_spatial_plot.png
-:class: bg-primary
-:width: 700px
-:alt: ratioETap_withIRR_spatial_plot
-
-For each pixel we compute individually the ratio ETa/ETp. 
-```
-
 ## Irrigation accounting
 
 ```{figure} ../figures/scenario0/netIrr_spatial_plot.png
@@ -97,22 +99,6 @@ netIrr_spatial_plot
 
 
 
-```{figure} ../figures/scenario0/netIrr_sumsum_spatial_plot.png
-:class: bg-primary
-:width: 700px
-:alt: netIrr_sumsum_spatial_plot
-
-netIrr_sumsum_spatial_plot
-```
-
-
-```{figure} ../figures/scenario0/bar_plot_netIrr.png
-:class: bg-primary
-:width: 700px
-:alt: bar_plot_netIrr
-
-bar_plot_netIrr
-```
 
 
 

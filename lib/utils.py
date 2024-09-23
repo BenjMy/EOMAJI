@@ -28,6 +28,9 @@ from shapely.geometry import mapping
 from scipy import stats
 from scipy.ndimage import label, center_of_mass
 
+import july
+from pyCATHY.cathy_utils import change_x2date
+import matplotlib.dates as mdates
 
 def extract_filedate(file_path):
     file_name = file_path.name
@@ -245,21 +248,37 @@ def plot_in_subplot(ax,
                     out_with_IRR,
                     out_baseline,
                     prop='sw',
+                    **kwargs
                     ):
 
+    dates = None
+    if 'dates' in kwargs:
+        dates = kwargs.pop('dates')
+        
     sw2plot_with_IRR =  out_with_IRR[prop].iloc[:,node_index].values
     sw2plot_baseline =  out_baseline[prop].iloc[:,node_index].values
     
+    if dates is None:
+        t = out_with_IRR['times']/86400
+        y = sw2plot_with_IRR
+        # tb = out_baseline['times']/86400
+        yb = sw2plot_baseline
+    else:
+        t = dates
+        y = sw2plot_with_IRR[1:]
+        yb = sw2plot_baseline[1:]
+        
+    
     ax.plot(
-            out_with_IRR['times']/86400,
-            sw2plot_with_IRR,
+            t,
+            y,
             # label='Irrigated',
             marker='.',
             color='blue'
             )
     ax.plot(
-            out_with_IRR['times']/86400,
-            sw2plot_baseline,
+            t,
+            yb,
             # label='Baseline',
             marker='.',
             color='red',
@@ -295,48 +314,42 @@ def plot_1d_evol(simu,
                  **kwargs
                  ):
     
-   
-    # simu.show_input('atmbc',ax=axs[0],
-    #                 units='days'
-    #                 )
+    timeIrr_sec = None
+    if 'timeIrr_sec' in kwargs:
+        timeIrr_sec = kwargs.pop('timeIrr_sec')
     
+    dates = None 
+    if 'dates' in kwargs:
+        dates = kwargs.pop('dates')
+        
     df_atmbc = simu.read_inputs('atmbc')
     df_atmbc['idnode'] = np.tile(np.arange(0,int(len(df_atmbc)/len(np.unique(df_atmbc.time)))),
                                  len(np.unique(df_atmbc.time))
                                  )
-                                 
     mask_node = df_atmbc['idnode']==node_index[0]
-    df_atmbc[mask_node]
-    # df_atmbc_mean = df_atmbc.groupby('time').mean()
-    # hydro_Majadas
-    # df_atmbc = hydro_Majadas.read_inputs('atmbc')
-
-    axs[0].bar(df_atmbc[mask_node].time/86400,
-               df_atmbc[mask_node].value.values
-                )
-    # axs[0].scatter(df_atmbc_mean.index/86400,
-    #             df_atmbc_mean.value.values
-    #             )
-    # axs[0].set_title('')
-    # simu_with_IRR.show_input('atmbc',ax=axs[0])
-    
-    timeIrr_sec = None
-    if 'timeIrr_sec' in kwargs:
-        timeIrr_sec = kwargs.pop('timeIrr_sec')
-
-    scenario = None
-    if 'scenario' in kwargs:
-        scenario = kwargs.pop('scenario')
-
-
+    if dates is None:
+        axs[0].bar(df_atmbc[mask_node].time/86400,
+                   df_atmbc[mask_node].value.values
+                    )
+        df_atmbc_dates = None
+    else:
+        df_atmbc_dates = change_x2date(df_atmbc[mask_node].time, 
+                                      dates[0],
+                                      formatIn="%Y%m%d",
+                                      formatOut="%Y-%m-%d %H:%M:%S"
+                                    )
+        axs[0].bar(df_atmbc_dates,
+                   df_atmbc[mask_node].value.values
+                    )
+                
     utils.plot_in_subplot(
                             axs[1],
                             node_index,
                             out_with_IRR,
                             out_baseline,
                             prop='sw',
+                            dates=df_atmbc_dates
                             )
-    
     
     utils.plot_in_subplot(
                             axs[2],
@@ -344,38 +357,46 @@ def plot_1d_evol(simu,
                             out_with_IRR,
                             out_baseline,
                             prop='psi',
+                            dates=df_atmbc_dates
                             )
-    
-    # ETa1d_index, ETa1d_with_IRR, ETa1d_baseline = find_irr_surface_node(index,
-    #                                                               out_with_IRR,
-    #                                                               out_baseline
-    #                                                               )
-    
     ETa1d_index = np.where(out_with_IRR['ETa']['SURFACE NODE']==node_index[0])[0]
     ETa1d_with_IRR = out_with_IRR['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
     ETa1d_baseline = out_baseline['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
     axs[0].set_xlabel('')
     axs[1].set_xlabel('')
 
+    if dates is None:
+        x = out_baseline['ETa'].time_sec.unique()[1:]/86400
+    else:
+        x = dates
+        
     indexplot = (3)
-    axs[indexplot].plot(out_baseline['ETa'].time_sec.unique()[1:]/86400,
+    axs[indexplot].plot(x ,
                         ETa1d_with_IRR,
                         label='Irr',
                         color='blue',
                         marker='*'
                         )
-    axs[indexplot].plot(out_baseline['ETa'].time_sec.unique()[1:]/86400,
+    axs[indexplot].plot(x ,
                         ETa1d_baseline,
                         label='baseline',
                         color='red',
                         marker='*'
                         )
     
-    axs[indexplot].axhline(y=abs(ETp), 
-                           color='k', 
-                           linestyle='--', 
-                           label='ETp')
-    # axs[indexplot].legend()
+    if type(ETp) != float:
+        axs[indexplot].plot(x,
+                            abs(ETp), 
+                            color='k', 
+                            linestyle='--', 
+                            label='ETp'
+                            )
+    else:
+        axs[indexplot].axhline(y=abs(ETp), 
+                                color='k', 
+                                linestyle='--', 
+                                label='ETp')
+    axs[indexplot].legend()
     axs[indexplot].set_xlabel('time')
     axs[indexplot].set_ylabel('ETa (m/s)')
 
@@ -384,23 +405,6 @@ def plot_1d_evol(simu,
                                color='r', 
                                linestyle='--', 
                                label='Start Irr.')
-        # axs[indexplot].axvline(x=timeIrr_sec + scenario['irr_length'], 
-        #                        color='r', 
-        #                        linestyle='--', 
-        #                        label='End Irr.')
-    
-    # Get current tick positions in seconds
-    # xticks = out_baseline['ETa'].time_sec.unique()[1:]
-
-    # # Convert tick positions to days
-    # xtick_labels = seconds_to_days(xticks)
-    # axs[-1].set_xticks(xtick_labels)
-
-    # # Update x-axis tick labels
-    # axs[-1].set_xticklabels([f'{int(day)}' for day in xtick_labels])
-    
-    # # Set x-axis label
-    # axs[-1].set_xlabel('Time (days)')
     
     
  
@@ -471,6 +475,52 @@ def get_CLC_code_def():
 
 def CLC_2_rootdepth():
     
+    # {'111': 'Continuous urban fabric',
+    #  '112': 'Discontinuous urban fabric',
+    #  '121': 'Industrial or commercial units',
+    #  '122': 'Road and rail networks and associated land',
+    #  '123': 'Port areas',
+    #  '124': 'Airports',
+    #  '131': 'Mineral extraction sites',
+    #  '132': 'Dump sites',
+    #  '133': 'Construction sites',
+    #  '141': 'Green urban areas',
+    #  '142': 'Sport and leisure facilities',
+    #  '211': 'Non-irrigated arable land',
+    #  '212': 'Permanently irrigated land',
+    #  '213': 'Rice fields',
+    #  '221': 'Vineyards',
+    #  '222': 'Fruit trees and berry plantations',
+    #  '223': 'Olive groves',
+    #  '231': 'Pastures',
+    #  '241': 'Annual crops associated with permanent crops',
+    #  '242': 'Complex cultivation patterns',
+    #  '243': 'Land principally occupied by agriculture, with significant areas of natural vegetation',
+    #  '244': 'Agro-forestry areas',
+    #  '311': 'Broad-leaved forest',
+    #  '312': 'Coniferous forest',
+    #  '313': 'Mixed forest',
+    #  '321': 'Natural grasslands',
+    #  '322': 'Moors and heathland',
+    #  '323': 'Sclerophyllous vegetation',
+    #  '324': 'Transitional woodland-shrub',
+    #  '331': 'Beaches, dunes, sands',
+    #  '332': 'Bare rocks',
+    #  '333': 'Sparsely vegetated areas',
+    #  '334': 'Burnt areas',
+    #  '335': 'Glaciers and perpetual snow',
+    #  '411': 'Inland marshes',
+    #  '412': 'Peat bogs',
+    #  '421': 'Salt marshes',
+    #  '422': 'Salines',
+    #  '423': 'Intertidal flats',
+    #  '511': 'Water courses',
+    #  '512': 'Water bodies',
+    #  '521': 'Coastal lagoons',
+    #  '522': 'Estuaries',
+    #  '523': 'Sea and ocean'}
+    
+    
     CLC_root_depth = {
         'Road and rail networks and associated land': 1e-3,
         'Permanently irrigated land': 0.3,
@@ -481,33 +531,38 @@ def CLC_2_rootdepth():
         'Natural grasslands': 0.2,
         'Sclerophyllous vegetation': 0.5,
         'Transitional woodland-shrub': 0.5,
-        'Discontinuous urban fabric':1e-3,
         'nodata':1e-3,
         'Non-irrigated arable land':0.5,
         'Broad-leaved forest': 3,
         'Water courses': 1e-3,
+        'Continuous urban fabric': 1e-3,
+        'Discontinuous urban fabric': 1e-3,
+        'Industrial or commercial units': 1e-3,
+        'Dump sites': 1e-3,
         }
     
     return CLC_root_depth
 
 
-def clip_rioxarray(ET_filelist,ET_0_filelist,rain_filelist,
+def clip_rioxarray(ET_filelist,
+                   ET_0_filelist,
+                   rain_filelist,
                    majadas_aoi):
         
     for m in ET_filelist:
         etai = rxr.open_rasterio(m)
-        clipped_etai = etai.rio.clip_box(
-                                          minx=majadas_aoi.bounds['minx'],
-                                          miny=majadas_aoi.bounds['miny'],
-                                          maxx=majadas_aoi.bounds['maxx'],
-                                          maxy=majadas_aoi.bounds['maxy'],
-                                        crs=majadas_aoi.crs,
-                                        )   
+        # clipped_etai = etai.rio.clip_box(
+        #                                   minx=majadas_aoi.bounds['minx'],
+        #                                   miny=majadas_aoi.bounds['miny'],
+        #                                   maxx=majadas_aoi.bounds['maxx'],
+        #                                   maxy=majadas_aoi.bounds['maxy'],
+        #                                   crs=majadas_aoi.crs,
+        #                                 )   
         
-        # clipped_etai = etai.rio.clip(
-        #                                 majadas_aoi.geometry,
-        #                                 crs=majadas_aoi.crs,
-        #                                 )  
+        clipped_etai = etai.rio.clip(
+                                        majadas_aoi.geometry.values,
+                                        crs=majadas_aoi.crs,
+                                        )  
         
         clipped_etai['time']=utils.extract_filedate(m)
         clipped_etai.rio.to_raster('../prepro/Majadas/' + m.name)
@@ -515,38 +570,40 @@ def clip_rioxarray(ET_filelist,ET_0_filelist,rain_filelist,
     
     for m in ET_0_filelist:
         etrefi = rxr.open_rasterio(m)
-        clipped_etrefi = etrefi.rio.clip_box(
-                                              minx=majadas_aoi.bounds['minx'],
-                                              miny=majadas_aoi.bounds['miny'],
-                                              maxx=majadas_aoi.bounds['maxx'],
-                                              maxy=majadas_aoi.bounds['maxy'],
-                                            crs=majadas_aoi.crs,
-                                            )   
-        # clipped_etrefi = etrefi.rio.clip(
-        #                                     majadas_aoi.geometry,
+        # clipped_etrefi = etrefi.rio.clip_box(
+        #                                       minx=majadas_aoi.bounds['minx'],
+        #                                       miny=majadas_aoi.bounds['miny'],
+        #                                       maxx=majadas_aoi.bounds['maxx'],
+        #                                       maxy=majadas_aoi.bounds['maxy'],
         #                                     crs=majadas_aoi.crs,
         #                                     )   
+        clipped_etrefi = etrefi.rio.clip(
+                                            majadas_aoi.geometry.values,
+                                            crs=majadas_aoi.crs,
+                                            )   
         clipped_etrefi['time']=utils.extract_filedate(m)
         clipped_etrefi.rio.to_raster('../prepro/Majadas/' + m.name)
         
     for m in rain_filelist:
         raini = rxr.open_rasterio(m)
-        clipped_raini = raini.rio.clip_box(
-                                              minx=majadas_aoi.bounds['minx'],
-                                              miny=majadas_aoi.bounds['miny'],
-                                              maxx=majadas_aoi.bounds['maxx'],
-                                              maxy=majadas_aoi.bounds['maxy'],
-                                            crs=majadas_aoi.crs,
-                                            )   
-        # clipped_raini = raini.rio.clip(
-        #                                     majadas_aoi.geometry,
+        # clipped_raini = raini.rio.clip_box(
+        #                                       minx=majadas_aoi.bounds['minx'],
+        #                                       miny=majadas_aoi.bounds['miny'],
+        #                                       maxx=majadas_aoi.bounds['maxx'],
+        #                                       maxy=majadas_aoi.bounds['maxy'],
         #                                     crs=majadas_aoi.crs,
         #                                     )   
+        clipped_raini = raini.rio.clip(
+                                            majadas_aoi.geometry.values,
+                                            crs=majadas_aoi.crs,
+                                            )   
     
         clipped_raini['time']=utils.extract_filedate(m)
         clipped_raini.rio.to_raster('../prepro/Majadas/' + m.name)
         
-def export_tif2netcdf(pathTif2read='../prepro/Majadas/'):
+    return clipped_etai, clipped_etrefi, clipped_raini
+        
+def export_tif2netcdf(pathTif2read='../prepro/Majadas/',fieldsite='Majadas'):
     
     file_pattern = '*ET-gf*.tif'
     ET_clipped_filelist = list(Path(pathTif2read).glob(file_pattern))
@@ -574,42 +631,55 @@ def export_tif2netcdf(pathTif2read='../prepro/Majadas/'):
         ETp_l.append(ETpfi)
         ETp_dates.append(ETpfi['time'])
     
-    rain = []
+    rain_l = []
     rain_dates = []
     for m in rain_clipped_filelist:
         rainfi = rxr.open_rasterio(m)
         rainfi['time']=utils.extract_filedate(m)
-        rain.append(rainfi)
+        rain_l.append(rainfi)
         rain_dates.append(rainfi['time'])
     
     ETp = xr.concat(ETp_l,dim='time')
-    ETp.to_netcdf('../prepro/Majadas/ETp_Majadas.netcdf')
-    RAIN = xr.concat(rain,dim='time')
-    RAIN.to_netcdf('../prepro/Majadas/RAIN_Majadas.netcdf')
+    ETp.to_netcdf(f'../prepro/Majadas/ETp_{fieldsite}.netcdf')
+    RAIN = xr.concat(rain_l,dim='time')
+    RAIN.to_netcdf(f'../prepro/Majadas/RAIN_{fieldsite}.netcdf')
     ETa = xr.concat(ETa_l,dim='time')
-    ETa.to_netcdf('../prepro/Majadas/ETa_Majadas.netcdf')
+    ETa.to_netcdf(f'../prepro/Majadas/ETa_{fieldsite}.netcdf')
 
-def read_prepo_EO_datasets(fieldsite='Majadas'):
-    ETa_ds = xr.open_dataset(f'../prepro/Majadas/ETa_{fieldsite}.netcdf')
+def read_prepo_EO_datasets(fieldsite='Majadas',
+                           crs=None):
+            
+    ETa_ds = xr.open_dataset(f'../prepro/Majadas/ETa_{fieldsite}.netcdf',
+                             # engine='scipy'
+                             )
     ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
     ETp_ds = xr.open_dataset(f'../prepro/Majadas/ETp_{fieldsite}.netcdf')
     ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
     RAIN_ds = xr.open_dataset(f'../prepro/Majadas/RAIN_{fieldsite}.netcdf')
     RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
-    CLC_ds = xr.open_dataset(f'../prepro/Majadas/CLCover_{fieldsite}.netcdf')
+    CLC_ds = xr.open_dataset(f'../prepro/CLCover_{fieldsite}.netcdf')
 
-    ds_analysis_EO = ETa_ds.to_dataarray().isel(variable=0,band=0)
-    ds_analysis_EO['ETa'] = ETa_ds.to_dataarray().isel(variable=0,band=0)
-    ds_analysis_EO['ETp'] = ETp_ds.to_dataarray().isel(variable=0,band=0)
-    ds_analysis_EO['RAIN'] = RAIN_ds.to_dataarray().isel(variable=0,band=0)
-    ds_analysis_EO = ds_analysis_EO.drop_vars('spatial_ref', errors='ignore')
+    ds_analysis_EO = ETa_ds.drop_vars('spatial_ref', errors='ignore').isel(band=0)
+    # contains_nan = ds_analysis_EO.ETa.isnull().any()
+    # nan_count = ds_analysis_EO.ETa.isnull().sum().item()
+    # nan_count = ds_analysis_EO.RAIN.isnull().sum().item()
+
+
+    # ds_analysis_EO = ETa_ds.isel(band=0).to_dataarray()
+    # ds_analysis_EO['ETa'] = ETa_ds.isel(band=0).sel(variable='ETa')
+    ds_analysis_EO['ETp'] = ETp_ds.to_dataarray().isel(band=0).sel(variable='ETp')
+    ds_analysis_EO['RAIN'] = RAIN_ds.to_dataarray().isel(band=0).sel(variable='RAIN')
+    # ds_analysis_EO = ds_analysis_EO.drop_vars('spatial_ref', errors='ignore')
 
     CLC_ds = CLC_ds.drop_vars('spatial_ref', errors='ignore')
     ds_analysis_EO['CLC_code18'] = CLC_ds.Code_18
     # ds_analysis_EO.to_netcdf('../prepro/ds_analysis_EO.netcdf')
     ds_analysis_EO = ds_analysis_EO.sortby('time')
     
-    nulltimeETa = np.where(ds_analysis_EO.ETa.isel(x=0,y=0).isnull())[0]
+    ds_analysis_EO = ds_analysis_EO.rio.write_crs(crs)
+    # ds_analysis_EO.ETa
+    
+    nulltimeETa = np.where(ds_analysis_EO.ETa.isnull().all())[0]
     valid_mask = ~ds_analysis_EO.time.isin(ds_analysis_EO.time[nulltimeETa])
     
     if len(nulltimeETa)>1:
@@ -618,9 +688,13 @@ def read_prepo_EO_datasets(fieldsite='Majadas'):
     
     print('Errrrrorrr in rain evaluation in the input!')
     # data_array = data_array.where((data_array <= 300) & (data_array > 0), other=np.nan)
-    ds_analysis_EO['RAIN'] = ds_analysis_EO['RAIN'].where((ds_analysis_EO['RAIN'] <= 300) & (ds_analysis_EO['RAIN'] > 0), 
-                                                          other=0)
+    # ds_analysis_EO['RAIN'] = ds_analysis_EO['RAIN'].where((ds_analysis_EO['RAIN'] <= 300) & (ds_analysis_EO['RAIN'] > 0), 
+    #                                                       other=0)
     
+    ds_analysis_EO['RAIN'] = ds_analysis_EO['RAIN'].where(
+                                    (ds_analysis_EO['RAIN'] <= 300) & (ds_analysis_EO['RAIN'] > 0) | ds_analysis_EO['RAIN'].isnull(), 
+                                    other=0
+                                )
     # Determine the overlapping time range
     start_time = max(ds_analysis_EO['RAIN'].time.min(), ds_analysis_EO['ETp'].time.min())
     end_time = min(ds_analysis_EO['RAIN'].time.max(), ds_analysis_EO['ETp'].time.max())
@@ -775,7 +849,7 @@ def get_irr_time_trigger(grid_xr,irr_patch_center):
     non_zero_indices = np.nonzero(irr_time_series.values)[0]
     if non_zero_indices.size > 0:
         first_non_zero_value = irr_time_series.values[non_zero_indices[0]]
-        first_non_zero_time = irr_time_series.time_days[non_zero_indices[0]].values
+        first_non_zero_time = irr_time_series.time[non_zero_indices[0]].values
     else:
         print("No non-zero values found in the time series at this location.")
     return non_zero_indices, first_non_zero_time, first_non_zero_value
@@ -1045,6 +1119,7 @@ def plot_accounting_summary_analysis(axs,
                                 out_with_IRR,
                                 out_baseline,
                                 prop='sw',
+                                # datetime,
                                 )
         if i == 0:
            axs[0,i].set_ylabel('ETa (m/s)')
@@ -1071,7 +1146,7 @@ def plot_accounting_summary_analysis(axs,
                 linestyle='--'
                    )
         
-        ax3.plot(grid_xr_EO['irr_daily'].time_days.values, 
+        ax3.plot(grid_xr_EO['irr_daily'].time.dt.days.values, 
                 grid_xr_EO['irr_daily'].sel(
                                             x=irr_patch_centers[j][0], 
                                             y=irr_patch_centers[j][1], 
@@ -1085,8 +1160,9 @@ def plot_accounting_summary_analysis(axs,
          first_non_zero_value) = utils.get_irr_time_trigger(grid_xr_EO,
                                                              irr_patch_centers[j]
                                                               )
-        t_irr = first_non_zero_time_days
-        
+        # t_irr = first_non_zero_time_days
+        t_irr = first_non_zero_time_days.astype('timedelta64[D]').astype(int)
+
         axs[2,i].axvline(x=t_irr, 
                         color='r', 
                         linestyle='--', 
@@ -1147,3 +1223,184 @@ def plot_accounting_summary_analysis(axs,
                )
     
     pass 
+
+
+
+def plot_july_rain_irr(datetime, grid_xr, mask_IN, axs=None):
+    
+    july.heatmap(datetime, 
+                 grid_xr['irr_daily'].sum(['x','y']), 
+                 title='Irrigation (mm/h)',
+                 cmap="github",
+                 colorbar=True,
+                 ax=axs[0]
+                 )
+    july.heatmap(datetime, 
+                 grid_xr['rain_daily'].sum(['x','y']), 
+                 title='Rain (mm/h)',
+                 cmap="golden",
+                 colorbar=True,
+                 ax=axs[1]
+                 )
+    pass
+    
+
+
+def get_mask_IN_patch_i(irrigation_map_xr,patchid=0):
+    mask_IN = irrigation_map_xr==patchid
+    return mask_IN
+
+def get_mask_OUT(irrigation_map_xr,patchid=0):
+    mask_OUT = irrigation_map_xr==1
+    return mask_OUT
+
+
+
+def plot_patches_irrigated_states(irr_patch_centers,
+                                  patch_centers_CATHY,
+                                  simu_with_IRR,
+                                  maxDEM,
+                                  grid_xr_with_IRR,
+                                  sc,
+                                  axs,
+                                  out_with_IRR,
+                                  out_baseline,
+                                  dates,
+                                  ):
+    for i, j in enumerate(irr_patch_centers):
+        node_index, _ = simu_with_IRR.find_nearest_node([patch_centers_CATHY[j][1],
+                                                         patch_centers_CATHY[j][0],
+                                                         maxDEM
+                                                         ]
+                                                        )   
+        (non_zero_indices, 
+         first_non_zero_time_days, 
+         first_non_zero_value) = utils.get_irr_time_trigger(grid_xr_with_IRR,
+                                                             irr_patch_centers[j]
+                                                              )
+        t_irr = first_non_zero_time_days.astype('timedelta64[s]').astype(int)
+        mask_IN = get_mask_IN_patch_i(grid_xr_with_IRR['irrigation_map'],patchid=j)
+        ETp_node_IN = grid_xr_with_IRR['ETp_daily'].where(mask_IN, drop=True).mean(['x','y'])
+    
+        utils.plot_1d_evol(
+                            simu_with_IRR,
+                            node_index,
+                            out_with_IRR,
+                            out_baseline,
+                            ETp_node_IN.values,
+                            axs,
+                            scenario=sc,
+                            dates = dates
+                            # timeIrr_sec = t_irr,
+                        )
+
+
+def plot_patches_NOirrgation_states(simu_with_IRR,
+                                    out_irr,
+                                    maxDEM,
+                                    grid_xr_with_IRR,
+                                    out_with_IRR,
+                                    out_baseline,
+                                    axs,
+                                    sc,
+                                    dates,
+                                   ):
+
+    node_index_OUT, _ = simu_with_IRR.find_nearest_node([out_irr[0][0],
+                                                         out_irr[1][0],
+                                                         maxDEM
+                                                         ]
+                                                        )
+
+    # ETp_node_IN = grid_xr_with_IRR['ETp_daily'][node_index]
+    mask_OUT = grid_xr_with_IRR['irrigation_map']==1
+    ETp_node_OUT = grid_xr_with_IRR['ETp_daily'].where(mask_OUT, drop=True).mean(['x','y'])
+    
+    utils.plot_1d_evol(
+                        simu_with_IRR,
+                        node_index_OUT,
+                        out_with_IRR,
+                        out_baseline,
+                        ETp_node_OUT,
+                        axs,
+                        scenario=sc,
+                        dates = dates
+                    )
+
+def custum_axis_patches_states(axs,
+                               irr_patch_centers,
+                               ):
+    # Assuming `axes` is your array of Axes objects (like the one you provided)
+    n_rows, n_cols = axs.shape
+    
+    for i, j in enumerate(irr_patch_centers):
+        # Set title for the top subplot in each column
+        axs[0, i].set_title(f'Irr{j}')
+        
+    for i in range(n_rows):
+        for j in range(n_cols):
+            ax = axs[i, j]
+            
+            # Hide x-axis labels and ticks for all but the last row
+            if i < n_rows - 1:
+                ax.set_xticklabels([])
+                ax.set_xlabel('')
+                ax.set_xticks([])
+            
+            # Hide y-axis labels and ticks for all but the first column
+            if j > 0:
+                ax.set_yticklabels([])
+                ax.set_ylabel('')
+                ax.set_yticks([])
+    
+    # Format the x-axis with datetime labels
+    axs[-1,0].xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically set major ticks
+    axs[-1,0].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))  # Set date format
+    
+    axs[0,0].xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically set major ticks
+    axs[0,0].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))  # Set date format
+    
+    # Rotate the x-axis labels for better readability
+    axs[-1, 0].tick_params(axis='x', rotation=45)
+    axs[-1, 1].tick_params(axis='x', rotation=45)
+
+
+
+def apply_EO_rules(ds_analysis_EO,sc_EO):
+    
+    ds_analysis_EO_ruled = ds_analysis_EO
+    if 'EO_resolution' in sc_EO:
+        # Assume sc_EO['EO_resolution'] is the desired new resolution (e.g., 30 meters)
+        new_resolution_x = sc_EO['EO_resolution']
+        new_resolution_y = sc_EO['EO_resolution']
+        
+        # Calculate the scale factors (coarsening factors) based on the current resolution and desired resolution
+        scale_factor_x = int(new_resolution_x / ds_analysis_EO.rio.resolution()[0])
+        scale_factor_y = int(new_resolution_y / ds_analysis_EO.rio.resolution()[1])
+        
+        # Resample the DataArray to the new resolution
+        ds_analysis_EO_ruled = ds_analysis_EO_ruled.coarsen(
+            x=scale_factor_x, 
+            y=scale_factor_y, 
+            boundary="trim"
+        ).mean()
+        
+        # fig, axs = plt.subplots(1,2)
+        # ds_analysis_EO['ACT. ETRA'].isel(time=5).plot.imshow(ax=axs[0])
+        # ds_analysis_EO_ruled['ACT. ETRA'].isel(time=5).plot.imshow(ax=axs[1])
+    if 'EO_freq_days' in sc_EO:
+        new_frequency = sc_EO['EO_freq_days']
+        
+        # Create a boolean mask where True indicates the days to keep
+        mask = ds_analysis_EO_ruled.time.to_index() % new_frequency == 0
+        
+        # Convert the mask to a DataArray
+        mask_da = xr.DataArray(mask, coords=[ds_analysis_EO_ruled.time], 
+                               dims=['time']
+                               )
+        
+        # Apply the mask to set values to NaN where the mask is False
+        ds_analysis_EO_ruled = ds_analysis_EO_ruled.where(mask_da, np.nan)
+
+
+    return ds_analysis_EO_ruled

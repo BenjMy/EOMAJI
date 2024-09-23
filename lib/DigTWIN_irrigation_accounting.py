@@ -41,7 +41,13 @@ def get_cmd():
     process_param.add_argument('-scenario_nb', 
                                type=int, 
                                help='scenario_nb',
-                               default=1, 
+                               default=0, 
+                               required=False
+                               ) 
+    process_param.add_argument('-AQUACROP', 
+                               type=int, 
+                               help='scenario AQUACROP',
+                               default=0, 
                                required=False
                                ) 
     args = parse.parse_args()
@@ -52,14 +58,17 @@ sc = load_scenario(args.scenario_nb)
 
 #%% Paths
 prj_name = 'EOMAJI_' + str(args.scenario_nb)
+if args.AQUACROP:
+    prj_name = 'EOMAJI_AquaCrop' + str(args.scenario_nb)
+# prj_name = 'EOMAJI_AquaCrop' + str(args.scenario_nb)
 figpath = Path('../figures/scenario' + str(args.scenario_nb))
 
 #%%
 os.getcwd()
-ds_analysis_EO = xr.open_dataset(f'../prepro/ds_analysis_EO_{args.scenario_nb}.netcdf',engine='scipy')
-ds_analysis_baseline = xr.open_dataset(f'../prepro/ds_analysis_baseline_{args.scenario_nb}.netcdf',engine='scipy')
-grid_xr_EO = xr.open_dataset(f'../prepro/grid_xr_EO_{args.scenario_nb}.netcdf',engine='scipy')
-grid_xr_baseline = xr.open_dataset(f'../prepro/grid_xr_baseline_{args.scenario_nb}.netcdf',engine='scipy')
+ds_analysis_EO = xr.open_dataset(f'../prepro/ds_analysis_EO_{args.scenario_nb}.netcdf')
+ds_analysis_baseline = xr.open_dataset(f'../prepro/ds_analysis_baseline_{args.scenario_nb}.netcdf')
+grid_xr_EO = xr.open_dataset(f'../prepro/grid_xr_EO_{args.scenario_nb}.netcdf')
+grid_xr_baseline = xr.open_dataset(f'../prepro/grid_xr_baseline_{args.scenario_nb}.netcdf')
 
 #%% Paths
 prj_name = 'EOMAJI_' + str(args.scenario_nb)
@@ -107,6 +116,24 @@ plt.suptitle('ETa baseline')
 plt.savefig(os.path.join(figpath,'ETa_baseline_spatial_plot.png'),
             dpi=300,
             )
+#%%
+from pyCATHY.importers import cathy_outputs as out_CT
+
+recharge_file = os.path.join(simu_baseline.workdir,
+                             simu_baseline.project_name,
+                             'output/recharge'
+                             )
+recharge = out_CT.read_recharge(recharge_file)
+# ETa_xarray = ETa.set_index(['time', 'x', 'y']).to_xarray()
+
+recharge_xr = recharge.set_index(['time', 'x', 'y']).to_xarray()
+
+# fig, ax = plt.subplots()
+recharge_xr['recharge'].plot.imshow(x="x", y="y", 
+                                    col="time", 
+                                    col_wrap=4,
+                                    )
+plt.savefig(figpath / 'spatial_recharge.png',)
 
 # IRRIGATION QUANTIFICATION
 #%% Quantify volume applied

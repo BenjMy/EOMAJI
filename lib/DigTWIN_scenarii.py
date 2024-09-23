@@ -72,7 +72,7 @@ def load_s0():
 
                 # ETP PARAMETERS
                 # ---------------------
-                'ETp': CONSTANT_ETp,
+                'ETp': [CONSTANT_ETp],
                 'nb_days': nb_days,
                 # 'nb_hours_ET': nb_hours_ET,
                 
@@ -85,9 +85,9 @@ def load_s0():
                 # IRRIGATION PARAMETERS
                 # ---------------------
                 'nb_irr_zones':1,
-                'irr_time_index': [irr_time_index],
+                'irr_time_index': [[irr_time_index]],
                 # 'irr_length': [irr_length],
-                'irr_flow': [irr_flow],
+                'irr_flow': [[irr_flow]],
                 'irr_center_point_x': [500], # in m
                 'irr_center_point_y': [500], # in m
                 'irr_square_size': [300],
@@ -137,7 +137,7 @@ def load_s2():
     # ---------------------
     scenario_change = {
                 'nb_irr_zones':3,
-                'irr_time_index': [3,4,5],
+                'irr_time_index': [[3],[4],[5]],
                 # 'irr_length': [irr_length,irr_length,irr_length],
                 'irr_flow': [irr_flow,irr_flow,irr_flow],
                 'irr_center_point_x': [200,300,650], # in m
@@ -159,7 +159,7 @@ def load_s3():
     # ---------------------
     scenario_change = {
                 'nb_irr_zones':3,
-                'irr_time_index': [3,4,5],
+                'irr_time_index': [[3],[4],[5]],
                 # 'irr_length': [irr_length,irr_length,irr_length],
                 'irr_flow': [irr_flow/2,irr_flow,irr_flow*2],
                 'irr_square_size': [100,100,100],

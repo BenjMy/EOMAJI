@@ -11,6 +11,7 @@ import pandas as pd
 from shapely.geometry import Point
 import utils
 from pathlib import Path
+from shapely.geometry import box
 
 #%%
 def get_AOI_POI_Majadas(crs_ET):
@@ -37,8 +38,8 @@ def get_AOI_POI_Majadas(crs_ET):
     # Corinne Land cover dataset
     # -------------------------------------------------------------------------
     clc_codes = utils.get_CLC_code_def()
-    CLC_path = Path('../data/Copernicus_95732/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
-    CLC_Majadas = gpd.read_file(CLC_path)
+    
+    CLC_Majadas = get_LandCoverMap()
     CLC_Majadas = CLC_Majadas.to_crs(crs_ET)
     
     CLC_clipped = gpd.clip(CLC_Majadas, 
@@ -85,7 +86,7 @@ def get_AOI_POI_Majadas(crs_ET):
 # SMC field sensors position
 # --------------------------
 
-def get_SWC_pos(path='../data/TDR/Majadas_coord_SWC_sensors_Benjamin.csv',
+def get_SWC_pos(path='../data/Spain/Majadas/TDR/Majadas_coord_SWC_sensors_Benjamin.csv',
                    target_crs=None):
     '''
     Import SWC content locations Majadas de Tietar
@@ -131,18 +132,47 @@ def get_SWC_data(path='../data/TDR/LMA_Meteo_2022-2023_Benjamin.csv'):
     return TDR_SWC, depths
 
 
-def get_LandCoverMap():
+def get_LandCoverMap(crs=None):
+    if crs is None:
+        crs = get_crs_ET()
     # get Corine Land Cover map for Majadas 
-    pass
+    CLC_path = Path('../data/Spain/Copernicus_95732/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
+    CLC_Majadas = gpd.read_file(CLC_path)
+    CLC_Majadas.to_crs(crs, inplace=True)
+
+    return CLC_Majadas
 
 def get_crs_ET(path='/run/media/z0272571a/SENET/iberia_daily/E030N006T6/20190205_LEVEL4_300M_ET_0-gf.tif'):
     return rio.open_rasterio(path).rio.crs
     
-def get_Majadas_aoi(crs=None):
+def get_Majadas_aoi(crs=None,buffer=3000):
     if crs is None:
         crs = get_crs_ET()
     majadas_aoi = gpd.read_file('../data/AOI/majadas_aoi.geojson')
     majadas_aoi.to_crs(crs, inplace=True)
+
+    # buffered_aoi = majadas_aoi.geometry.buffer(buffer)  # Adjust the buffer distance as needed
+    # majadas_aoi = gpd.GeoDataFrame({'name': ['Majadas de Tietar Larger AOI'], 
+    #                                     'geometry': buffered_aoi}
+    #                                   )
+    if buffer>0:
+    # Get the bounding box of the geometry and apply a buffer to enlarge it
+    # buffer_distance = 5000  # Adjust this value as needed
+        minx, miny, maxx, maxy = majadas_aoi.total_bounds
+        buffered_box = box(minx - buffer, 
+                           miny - buffer, 
+                           maxx + buffer, 
+                           maxy + buffer)
+        
+        # Create a new GeoDataFrame for the rectangular AOI
+        majadas_aoi = gpd.GeoDataFrame({'name': ['Majadas de Tietar Larger AOI'], 
+                                        'geometry': [buffered_box]}, 
+                                       crs=majadas_aoi.crs
+                                       )
+
+
+    # majadas_aoi = gpd.read_file('../data/AOI/test_DEM_CATHY-polygon.shp')
+    # majadas_aoi = gpd.read_file('../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
     return majadas_aoi
 
 def get_Majadas_POIs(crs=None):

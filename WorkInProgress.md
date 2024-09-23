@@ -6,7 +6,9 @@
 ### Issues
 
 **TWIN simulations** 
-- [ ] July calendar only works for matplolib 3.7
+- [x] July calendar only works for matplolib 3.7: temporary solved using a specific branch with a fix: 
+	pip install git+https://github.com/thoellrich/july.git@fix-mpl.cbook.MatplotlibDepreciationWarning
+
 
 - [x] Problem with calculation of net atmbc from xarray grid !! Only for irrigation simu (meaning the problem can be too high irrigation rate)
 - [x] Problem when changing number of zones/ soil
@@ -17,14 +19,20 @@
 
 - [x] Detecting event and classify!
 - [ ] Water **quantification**: this can be done to a daily/weekly/monthly scale
-- [ ] Plot depletion + runoff
+  - [ ] Plot depletion + runoff
+  - [ ] create df_daily_waterbalance from mbconv (VIN, VOUT, CUMVIN, STORE1, DSTORE...)
 
-
-- [ ] Long term synthetic water balance modelling (some months)
+- [ ] **Aquacrop** Long term synthetic water balance modelling (some months)
   - [ ] create and define how many rain events/ irrigation events
     - [ ] define **delineation errors** as the difference between (nb of events detected - nb of events)/nb of events
     - [ ] define **quantification errors** as the difference between (mm irr. detected - mm. irr applied)/nb of events
-  - Use ERA5 to create relevant scenario of ETp (see paper Italian) - ERA5 xarray? ERA5 Land soil moisture simulator luca brocca: Simulator of ERA5 Land soil moisture in the 0-100 cm soil layer (results in the first comment) and I have created 3 scenario by using the climatology 1991-2020: +/- 20% of 		 precipitation, +25% air temperature (as observed in the last years). See: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview  --> Mean potential evaporation rate	kg m-2 s-1
+   (Not really needed)
+  - [ ] !varying root depths over time in AquaCrop!
+  - [ ] adjust soil properties to fit AquaCrop inputs
+  - [ ] initial_water_content
+   
+  - [ ] Use ERA5 to create relevant scenario of ETp (see paper Italian) - ERA5 xarray? ERA5 Land soil moisture simulator luca brocca: Simulator of ERA5 Land soil moisture in the 0-100 cm soil layer (results in the first comment) and I have created 3 scenario by using the climatology 1991-2020: +/- 20% of 		 precipitation, +25% air temperature (as observed in the last years). 
+  See: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview  --> Mean potential evaporation rate	kg m-2 s-1
  
 - [ ] Varying nb of earth observations --> impact on detection (plot in July)
 - [ ] Varying EO resolutions --> impact on detection (plot in July)
@@ -52,6 +60,7 @@ For both it is necessary to write the soil file accordingly
 ### 💧 Water balance/ Land surface **Real field** modeling
 - real data EOMAJI's field site:
   - [ ] **Spain Majadas**
+    - [ ] Extend to full catchment
     - [x]define root map with respect to corinne land cover
     - [ ] add EC towers as points of interest
     - [x] check simulation inputs

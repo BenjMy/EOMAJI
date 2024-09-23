@@ -27,3 +27,13 @@ This work focus on introducing heterogeneities into the soil and vegetation stru
 This calibration will help characterize soil/plant properties.
 
 
+```{figure} july_rain_irr_DA_soil_tocome.png
+:class: bg-primary
+:width: 600px
+:alt: july_rain_irr_DA_soil_tocome
+
+july_rain_irr_DA_soil_tocome
+```
+
+
+

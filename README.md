@@ -59,6 +59,8 @@ https://land.copernicus.eu/en/cart-downloads
 EU-Hydro River Network Database 2006-2012 (vector), Europe - Shapefile (NUTS: ES432)
 EU-Hydro River Network Database 2006-2012 (vector), Europe - Shapefile (Bounding Box)
 
+**Piezometric levels**
+- https://sig.mapama.gob.es/geoportal/
 
 ### Example: Spain irrigation accounting 
 - 4 tiles to cover Spain

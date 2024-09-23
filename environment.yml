@@ -1,23 +1,19 @@
-name: pyTSEB
+name: EOMAJI
 channels:
     - conda-forge
 dependencies:
-    - python=3
-    - gdal
+    - python=3.9
+    - spyder<6.0.0
     - numpy
     - matplotlib
     - scipy
     - pandas
-    - jupyter
     - notebook
-    - bokeh
-    - netCDF4
     - xarray
     - rioxarray
     - geopandas
     - shapely
     - contextily
     - pip
-    - pip:
-        - git+https://github.com/BenjMy/pyTSEB
-        - git+https://github.com/hectornieto/pypro4sail
+      - cdsapi
+      - cftime

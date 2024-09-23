@@ -23,7 +23,7 @@ import rioxarray as rxr
 import xarray as xr
 # FIG_PATH = '../figures/'
 import matplotlib.colors as mcolors
-
+import pandas as pd
 #%%
 import xarray as xr
 import numpy as np
@@ -35,7 +35,7 @@ def plot_schedule(grid_xr,pp='irr_daily',
                   unit='mm/day'
                   ):
     # Number of time steps
-    n_time_steps = len(grid_xr['time_days'])
+    n_time_steps = len(grid_xr['time'])
     
     # Define the size of the subplot grid (e.g., 2 rows by 5 columns)
     n_cols = 5
@@ -55,7 +55,7 @@ def plot_schedule(grid_xr,pp='irr_daily',
         val = grid_xr[pp]
         if unit=='mm/day':
             val = grid_xr[pp]*(86400*1e3)
-        im = val.isel(time_days=i).plot.imshow(ax=ax, cmap='viridis',
+        im = val.isel(time=i).plot.imshow(ax=ax, cmap='viridis',
                                                        vmin=vmin,
                                                        vmax=vmax,
                                                        add_colorbar=False  # Disable the automatic colorbar
@@ -160,47 +160,57 @@ def prepare_scenario(scenario,with_irrigation=True):
         
     #%% Compute ETp 
     # -------------------------------------------------------------------------
-    ETp_daily = set_ETp_daily(scenario)
+    if len(scenario['ETp'])==1:
+        ETp_daily = set_ETp_daily(scenario)
+    else:
+        ETp_daily = scenario['ETp']
+
     ETp_daily_spatial = [np.ones([len(grid_xr.x),len(grid_xr.y)])*valETpTi for valETpTi in ETp_daily]
+
     nb_days = scenario['nb_days']
     
-    time_days = np.arange(0,nb_days,1)
-    grid_xr['time_days']=time_days
-    grid_xr['time_hours']=np.arange(0,nb_days*86400,1)
-    grid_xr['ETp_daily'] = (('time_days','x','y'), ETp_daily_spatial)
+    time_days = pd.to_timedelta(np.arange(0,nb_days,1), unit='D')
+    grid_xr['time']=time_days
+    grid_xr['time_hours']=np.arange(0,nb_days*24,1)
+    grid_xr['ETp_daily'] = (('time','x','y'), ETp_daily_spatial)
 
-    fig, axes = plot_schedule(grid_xr,'ETp_daily',vmax=10,unit='mm/day')
-    fig.savefig(scenario['figpath'] /  'ETp_daily.png', dpi=300)
+    if len(ETp_daily_spatial)<=15:
+        fig, axes = plot_schedule(grid_xr,'ETp_daily',vmax=10,unit='mm/day')
+        fig.savefig(scenario['figpath'] /  'ETp_daily.png', dpi=300)
     
     #%% Compute irr_daily 
     # -------------------------------------------------------------------------
-    irr_daily = [np.zeros(np.shape(dem))]*len(grid_xr['time_days'])
-    grid_xr['irr_daily'] = (('time_days','x','y'), irr_daily)
+    irr_daily = [np.zeros(np.shape(dem))]*len(grid_xr['time'])
+    grid_xr['irr_daily'] = (('time','x','y'), irr_daily)
     if with_irrigation:
-        for i, irr_ti in enumerate(scenario['irr_time_index']):
-            mask = grid_xr['irrigation_map'] == (i + 2)
-            updated_value = scenario['irr_flow'][i] # * scenario['irr_length'][i] #/ (60 * 60)
-            grid_xr['irr_daily'].loc[
-                dict(time_days=irr_ti)
-            ] = np.where(mask, updated_value, grid_xr['irr_daily'].loc[
-                dict(time_days=irr_ti)
-            ])
-                
-        irr_daily
+        for i , irrzonei in enumerate(np.unique(grid_xr['irrigation_map'])[1:]):
+            for j, irr_ti in enumerate(scenario['irr_time_index'][i]):
+                irr_ti_pd = pd.to_timedelta(irr_ti, unit='D')
+                mask = grid_xr['irrigation_map'] == irrzonei #(i + 2)
+                updated_value = scenario['irr_flow'][i][j] # * scenario['irr_length'][i] #/ (60 * 60)
+                grid_xr['irr_daily'].loc[
+                    dict(time=irr_ti_pd)
+                ] = np.where(mask, updated_value, 
+                             grid_xr['irr_daily'].loc[
+                                                      dict(time=irr_ti_pd)
+                                                     ]
+                             )                
+        if len(ETp_daily_spatial)<=15:
+            fig, axes = plot_schedule(grid_xr,'irr_daily',vmax=10,unit='mm/day')
+            fig.savefig(scenario['figpath'] /  'irr_schedule.png', dpi=300)
         
-        fig, axes = plot_schedule(grid_xr,'irr_daily',vmax=10,unit='mm/day')
-        fig.savefig(scenario['figpath'] /  'irr_schedule.png', dpi=300)
-    
     #%% define rain map
     # -------------------------------------------------------------------------
-    rain_daily = [np.zeros(np.shape(dem))]*len(grid_xr['time_days'])
-    grid_xr['rain_daily'] = (('time_days','x','y'), rain_daily)
+    rain_daily = [np.zeros(np.shape(dem))]*len(grid_xr['time'])
+    grid_xr['rain_daily'] = (('time','x','y'), rain_daily)
     if 'rain_time_index' in scenario:
         for i, rain_ti in enumerate(scenario['rain_time_index']):
+              rain_ti_pd = pd.to_timedelta(rain_ti, unit='D')
               updated_value = scenario['rain_flow'][i] #* scenario['rain_length'][i] / (60 * 60)
-              grid_xr['rain_daily'].loc[dict(time_days=rain_ti)] =  updated_value
-    fig, axes = plot_schedule(grid_xr,'rain_daily',vmax=10,unit='mm/day')
-    fig.savefig(scenario['figpath'] /  'rain_schedule.png', dpi=300)
+              grid_xr['rain_daily'].loc[dict(time=rain_ti_pd)] =  updated_value
+    if len(ETp_daily_spatial)<=15:
+        fig, axes = plot_schedule(grid_xr,'rain_daily',vmax=10,unit='mm/day')
+        fig.savefig(scenario['figpath'] /  'rain_schedule.png', dpi=300)
 
     #%% Compute net atmbc
     # -------------------------------------------------------------------------
@@ -211,9 +221,9 @@ def prepare_scenario(scenario,with_irrigation=True):
         # grid_xr['ETp_daily'].max()
         # grid_xr['net_atmbc'].max()
         # grid_xr['net_atmbc'].min()
-        
-        fig, axes = plot_schedule(grid_xr,'net_atmbc',vmax=10,unit='mm/day')
-        fig.savefig(scenario['figpath'] /  'net_atmbc_schedule.png', dpi=300)
+        if len(ETp_daily_spatial)<=15:
+            fig, axes = plot_schedule(grid_xr,'net_atmbc',vmax=10,unit='mm/day')
+            fig.savefig(scenario['figpath'] /  'net_atmbc_schedule.png', dpi=300)
 
 
     # grid_xr['net_atmbc'].max()
@@ -436,7 +446,7 @@ def setup_cathy_simulation(
     # ETp_scenario = scenario['ETp']   
     padded_netatmbc_all = []
     for i in range(len(grid_xr['net_atmbc'].values)):
-        padded_netatmbc, _ = pad_raster_2mesh(grid_xr['net_atmbc'].isel(time_days=i).values)
+        padded_netatmbc, _ = pad_raster_2mesh(grid_xr['net_atmbc'].isel(time=i).values)
         padded_netatmbc_all.append(padded_netatmbc)
     netValue= [np.hstack(net2d) for net2d in padded_netatmbc_all]
  
@@ -445,7 +455,7 @@ def setup_cathy_simulation(
     simu.update_atmbc(
                       HSPATM=0, # spatially variable atmbc
                       IETO=1,
-                      time=list(grid_xr['time_days'].values*86400),
+                      time=list(grid_xr['time'].values.astype('timedelta64[s]').astype(int)),
                       netValue=netValue,
                       # show=True,
                     )
@@ -458,7 +468,7 @@ def setup_cathy_simulation(
                    pressure_head_ini=scenario['pressure_head_ini']
                    )
     
-    simu.update_nansfdirbc(time=grid_xr['time_days'].values*86400,
+    simu.update_nansfdirbc(time=list(grid_xr['time'].values.astype('timedelta64[s]').astype(int)),
                            no_flow=True
                            )
     
@@ -472,10 +482,10 @@ def setup_cathy_simulation(
         #                             nansfdirbc_val
         #                            )
 
-    simu.update_nansfneubc(time=grid_xr['time_days'].values*86400,
+    simu.update_nansfneubc(time=list(grid_xr['time'].values.astype('timedelta64[s]').astype(int)),
                            no_flow=True
                            )
-    simu.update_sfbc(time=grid_xr['time_days'].values*86400,
+    simu.update_sfbc(time=list(grid_xr['time'].values.astype('timedelta64[s]').astype(int)),
                      no_flow=True
                      )
     
@@ -543,10 +553,12 @@ def setup_cathy_simulation(
 
     #%% Update simulation parameters
     # -------------------------------------------------------------------------
-    simu.update_parm(TIMPRTi=list(grid_xr['time_days'].values*86400),
-                     VTKF=2 # both saturation and pressure head
-                     )
+    # simu.update_parm(TIMPRTi=list(grid_xr['time'].values.astype('timedelta64[s]').astype(int)),
+    #                  VTKF=4 # both saturation and pressure head
+    #                  )
     
-
+    simu.update_parm(TIMPRTi=list(grid_xr['time'].values.astype('timedelta64[s]').astype(int)),
+                     VTKF=0 # both saturation and pressure head
+                     )
 
     return simu, grid_xr
