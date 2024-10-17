@@ -51,6 +51,9 @@ ETp_window_size_x = 10 # size of the window in pixels to compute the rolling mea
 # ---------------
 PMIN = -1e30
 pressure_head_ini = -200
+POROSITY = 0.60
+PERMX = 1e-6
+
 
 threshold_localETap = 0.3
 threshold_regionalETap = 0.3
@@ -69,6 +72,8 @@ def load_s0():
                 # ---------------
                 'PMIN': PMIN,
                 'pressure_head_ini': pressure_head_ini,
+                'porosity': POROSITY,
+                'PERMX': [PERMX],
 
                 # ETP PARAMETERS
                 # ---------------------

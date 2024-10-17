@@ -68,7 +68,7 @@ def compute_ratio_ETap_local(ds_analysis,
     # calculating the change in **ETa/p** between the time on which irrigation
     # is to be detect and most recent previous time on which ET estimates are available.
     #
-    ds_analysis["ratio_ETap_local_diff"] = ds_analysis["ratio_ETap_local"].diff(dim='time')
+    ds_analysis["ratio_ETap_local_diff"] = abs(ds_analysis["ratio_ETap_local"].diff(dim='time'))
     
     return ds_analysis
 
@@ -109,7 +109,7 @@ def compute_ratio_ETap_regional(ds_analysis,
             mean_dataarray.loc[{'time': timei}] = m
             
         ds_analysis["ratio_ETap_regional_mean"] = mean_dataarray
-        ds_analysis["ratio_ETap_regional_diff"] = ds_analysis["ratio_ETap_regional_mean"].diff(dim='time')
+        ds_analysis["ratio_ETap_regional_diff"] = abs(ds_analysis["ratio_ETap_regional_mean"].diff(dim='time'))
     
     return ds_analysis
 
@@ -854,8 +854,8 @@ def get_irr_time_trigger(grid_xr,irr_patch_center):
 
 
 def irrigation_delineation(decision_ds,
-                           threshold_local=-0.25,
-                           threshold_regional=-0.25,
+                           threshold_local=0.25,
+                           threshold_regional=0.25,
                            ):
     decision_ds = compute_ratio_ETap_local(decision_ds)
     decision_ds = utils.compute_ratio_ETap_regional(decision_ds)
@@ -899,7 +899,7 @@ def irrigation_delineation(decision_ds,
     # Classify based on rules
     # -------------------------------------------------------------------------
     event_type = classify_event(decision_ds)
-    return event_type
+    return decision_ds, event_type
 
 
 
@@ -911,8 +911,7 @@ def apply_rules_rain(decision_ds,
     # (e.g. increase in regional ETa/p is over a threshold and
      # larger or similar to increase in local Eta/p)
      
-    
-    
+
     decision_ds['condRain1'] = decision_ds['threshold_regional']==1
     decision_ds['condRain2'] = abs(decision_ds['ratio_ETap_regional_diff']) >= abs(decision_ds['ratio_ETap_local_diff'])
     decision_ds['condRain'] = decision_ds['condRain1'] & decision_ds['condRain2']
@@ -1262,7 +1261,7 @@ def plot_patches_irrigated_states(irr_patch_centers,
                                   axs,
                                   out_with_IRR,
                                   out_baseline,
-                                  dates,
+                                   dates,
                                   ):
     for i, j in enumerate(irr_patch_centers):
         node_index, _ = simu_with_IRR.find_nearest_node([patch_centers_CATHY[j][1],
@@ -1401,6 +1400,22 @@ def apply_EO_rules(ds_analysis_EO,sc_EO):
 
 
     return ds_analysis_EO_ruled
+
+def check_and_tune_E0_dict(sc):
+    '''
+    Add EO criteria (resolution, frequency, type, ...)
+    '''
+    sc_EO = {}
+    if sc.get('microwaweMesh'):
+        sc_EO.update({'maxdepth': 0.05})
+    if sc.get('EO_freq'):
+        sc_EO.update({'EO_freq': sc.get('EO_freq')})
+    if sc.get('EO_resolution'):
+        sc_EO.update({'EO_resolution': sc.get('EO_resolution')})
+    if sc.get('PERMX'):
+        sc_EO.update({'SOIL_PERMX': sc.get('PERMX')})
+        
+    return sc_EO
 
 #%% Data Assimilation
 

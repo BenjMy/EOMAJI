@@ -521,7 +521,12 @@ def setup_cathy_simulation(
         for zone_i in range(len(PERMX)):
             for pp in ['PERMX','PERMY','PERMZ']:
                 SPP_map.loc[zone_i+1,pp] = PERMX[zone_i]
-            
+    # if 'porosity' in scenario:
+    #     porosity = scenario['porosity']
+    #     for zone_i in range(len(porosity)):
+    #         SPP_map.loc[zone_i+1,'porosity'] = porosity[zone_i]
+                
+                
     df_FP_map = simu.init_soil_FP_map_df(nb_irr_plots)
     FP_map = simu.set_SOIL_defaults(FP_map_default=True)
       

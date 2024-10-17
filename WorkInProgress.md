@@ -27,6 +27,7 @@
     - [ ] define **delineation errors** as the difference between (nb of events detected - nb of events)/nb of events
     - [ ] define **quantification errors** as the difference between (mm irr. detected - mm. irr applied)/nb of events
     - [x] DA with soil and root update during rainfed season
+      - [x] Create EO ref model with PERMX < Truth 
       - [ ] Plot how much event detected with DA/ without DA?
    (Not really needed)
   - [ ] !varying root depths over time in AquaCrop!
