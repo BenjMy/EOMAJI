@@ -697,17 +697,17 @@ def set_probability_levels():
     pass
     
 #%%
-
+# args.scenario_nb=0
+# args.weather_scenario=0
 grid_xr_with_IRR.attrs = {}
-grid_xr_with_IRR.to_netcdf(f'../prepro/grid_xr_EO_{args.scenario_nb}.netcdf')
+grid_xr_with_IRR.to_netcdf(f'../prepro/grid_xr_EO_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
 grid_xr_baseline.attrs = {}
-grid_xr_baseline.to_netcdf(f'../prepro/grid_xr_baseline_{args.scenario_nb}.netcdf')
+grid_xr_baseline.to_netcdf(f'../prepro/grid_xr_baseline_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
 
 ds_analysis_EO['time'] = ds_analysis_EO['time'].astype('timedelta64[D]')
-ds_analysis_EO.to_netcdf(f'../prepro/ds_analysis_EO_{args.scenario_nb}.netcdf')
+ds_analysis_EO.to_netcdf(f'../prepro/EO_scenario_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
 
 ds_analysis_baseline['time'] = ds_analysis_EO['time'].astype('timedelta64[D]')
-ds_analysis_baseline.to_netcdf(f'../prepro/ds_analysis_baseline_{args.scenario_nb}.netcdf')
-
+ds_analysis_baseline.to_netcdf(f'../prepro/baseline_scenario_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
 
 

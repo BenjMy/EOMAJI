@@ -194,7 +194,6 @@ def xarraytoDEM_pad(data_array):
     pixel_size_x = transform.a  # Pixel width (x-direction)
     pixel_size_y = -transform.e  # Pixel height (y-direction, note the negative sign for y)
     
-
     # Define padding in pixels
     pad_pixels_y = 1  # Padding in y-direction (top and bottom)
     pad_pixels_x = 1  # Padding in x-direction (left and right)

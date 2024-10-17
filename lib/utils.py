@@ -647,33 +647,30 @@ def export_tif2netcdf(pathTif2read='../prepro/Majadas/',fieldsite='Majadas'):
     ETa.to_netcdf(f'../prepro/Majadas/ETa_{fieldsite}.netcdf')
 
 def read_prepo_EO_datasets(fieldsite='Majadas',
-                           crs=None):
+                           AOI='Buffer_5000',
+                           crs=None
+                           ):
             
-    ETa_ds = xr.open_dataset(f'../prepro/Majadas/ETa_{fieldsite}.netcdf',
+    ETa_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETa_{fieldsite}.netcdf',
                              # engine='scipy'
                              )
     ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
-    ETp_ds = xr.open_dataset(f'../prepro/Majadas/ETp_{fieldsite}.netcdf')
+    ETp_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETp_{fieldsite}.netcdf')
     ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
-    RAIN_ds = xr.open_dataset(f'../prepro/Majadas/RAIN_{fieldsite}.netcdf')
+    RAIN_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/RAIN_{fieldsite}.netcdf')
     RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
-    CLC_ds = xr.open_dataset(f'../prepro/CLCover_{fieldsite}.netcdf')
+    CLC_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/CLCover_{fieldsite}.netcdf')
 
     ds_analysis_EO = ETa_ds.drop_vars('spatial_ref', errors='ignore').isel(band=0)
     # contains_nan = ds_analysis_EO.ETa.isnull().any()
     # nan_count = ds_analysis_EO.ETa.isnull().sum().item()
     # nan_count = ds_analysis_EO.RAIN.isnull().sum().item()
 
-
-    # ds_analysis_EO = ETa_ds.isel(band=0).to_dataarray()
-    # ds_analysis_EO['ETa'] = ETa_ds.isel(band=0).sel(variable='ETa')
     ds_analysis_EO['ETp'] = ETp_ds.to_dataarray().isel(band=0).sel(variable='ETp')
     ds_analysis_EO['RAIN'] = RAIN_ds.to_dataarray().isel(band=0).sel(variable='RAIN')
-    # ds_analysis_EO = ds_analysis_EO.drop_vars('spatial_ref', errors='ignore')
 
     CLC_ds = CLC_ds.drop_vars('spatial_ref', errors='ignore')
     ds_analysis_EO['CLC_code18'] = CLC_ds.Code_18
-    # ds_analysis_EO.to_netcdf('../prepro/ds_analysis_EO.netcdf')
     ds_analysis_EO = ds_analysis_EO.sortby('time')
     
     ds_analysis_EO = ds_analysis_EO.rio.write_crs(crs)
@@ -1404,3 +1401,27 @@ def apply_EO_rules(ds_analysis_EO,sc_EO):
 
 
     return ds_analysis_EO_ruled
+
+#%% Data Assimilation
+
+     
+def backup_simulog_DA(args,filename='DAlog.csv'):
+    results_df = pd.read_csv(filename,index_col=0)
+    now = datetime.now()
+    results_df_cols = vars(args).keys()
+    results_df_new = pd.DataFrame([vars(args)])
+    cols2check = list(vars(args).keys())
+    
+    values = results_df_new[cols2check].values
+    matching_index = results_df.index[(results_df[cols2check] == values).all(axis=1)].tolist()
+    if matching_index:
+        now = datetime.now()
+        results_df.loc[matching_index, 'datetime'] = now
+        matching_index = matching_index[0]
+    else:
+        results_df_new['datetime']=now
+        results_df = pd.concat([results_df,results_df_new],ignore_index=True)
+        matching_index = len(results_df)-1
+    results_df.to_csv(filename)
+    return results_df, matching_index
+

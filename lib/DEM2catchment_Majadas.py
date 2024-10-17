@@ -32,37 +32,17 @@ crs_ET_0 = rio.open_rasterio(ET_0_filelist[0]).rio.crs
 
 #%% Read AOI points and plots
 # -----------------------------------------------------------------------------
-# majadas_aoi = gpd.read_file('../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
-# majadas_aoi.crs
-# majadas_aoi.to_crs(crs_ET_0, inplace=True)
+
 majadas_POIs = gpd.read_file('../data/AOI/POI_Majadas.geojson')
 majadas_POIs.to_crs(crs_ET_0, inplace=True)
-
 majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=5000)
-# majadas_aoi_buff = Majadas_utils.get_Majadas_aoi(buffer=0.6)
-# majadas_aoi_crs = majadas_aoi.to_crs(crs_ET_0)
-# majadas_aoi_crs.crs
-
-# majadas_aoi_crs.plot()
 majadas_aoi.crs
-# s
-#%% Read Majadas DTM
-# -----------------------------------------------------------------------------
-DTM_Global = rio.open_rasterio('../data/Spain/DTM_Global/dem.vrt')
-DTM_Global.rio.crs 
 
-# clipped_DTM_rxr = DTM_Global.rio.clip_box(
-#                                       minx=majadas_aoi_buff.bounds['minx'],
-#                                       miny=majadas_aoi_buff.bounds['miny'],
-#                                       maxx=majadas_aoi_buff.bounds['maxx'],
-#                                       maxy=majadas_aoi_buff.bounds['maxy'],
-#                                        crs=majadas_aoi_buff.crs,
-#                                     ) 
-# clipped_DTM_rxr.isel(band=0).plot.imshow()
-# clipped_DTM_rxr_reproj = clipped_DTM_rxr.rio.reproject(crs_ET_0)
+# DTM_tile = rio.open_rasterio('../data/Spain/DEM_Spain_tiles/E030N012T6.tif')
+DTM_tile = rio.open_rasterio('../data/Spain/DEM_Spain_tiles/E030N006T6.tif')
+DTM_tile.rio.crs 
 
-
-clipped_DTM_rxr = DTM_Global.rio.clip_box(
+clipped_DTM_rxr = DTM_tile.rio.clip_box(
                                        minx=majadas_aoi.bounds['minx'],
                                        miny=majadas_aoi.bounds['miny'],
                                        maxx=majadas_aoi.bounds['maxx'],
@@ -71,25 +51,82 @@ clipped_DTM_rxr = DTM_Global.rio.clip_box(
                                     )  
 clipped_DTM_rxr_reproj = clipped_DTM_rxr.rio.reproject(crs_ET_0)
 clipped_DTM_rxr_reproj.isel(band=0).plot.imshow()
-
-
-# clipped_DTM_rxr = DTM_Global.rio.clip(
-#                                       majadas_aoi_crs.geometry.values,  
-#                                       # minx=majadas_aoi.bounds['minx'],
-#                                       # miny=majadas_aoi.bounds['miny'],
-#                                       # maxx=majadas_aoi.bounds['maxx'],
-#                                       # maxy=majadas_aoi.bounds['maxy'],
-#                                       crs=majadas_aoi.crs,
-#                                     )  
- 
-
-
-clipped_DTM_rxr_reproj.isel(band=0).plot.imshow()
-clipped_DTM_rxr_reproj.rio.to_raster('../data/Spain/DTM_Global/clipped_DTM_Majadas_AOI.tif', 
+clipped_DTM_rxr_reproj.rio.resolution()
+clipped_DTM_rxr_reproj.rio.to_raster('../data/Spain/clipped_DTM_Majadas_AOI.tif', 
                               # compress='LZMA', 
                               # tiled=True, 
                               # dtype="int32"
                               )
+
+#%%
+
+majadas_aoi = gpd.read_file('../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
+majadas_aoi.crs
+majadas_aoi.to_crs(crs_ET_0, inplace=True)
+
+clipped_DTM_H2_rxr = DTM_tile.rio.clip_box(
+                                       minx=majadas_aoi.bounds['minx'],
+                                       miny=majadas_aoi.bounds['miny'],
+                                       maxx=majadas_aoi.bounds['maxx'],
+                                       maxy=majadas_aoi.bounds['maxy'],
+                                      crs=majadas_aoi.crs,
+                                    )  
+clipped_DTM_H2_rxr_reproj = clipped_DTM_H2_rxr.rio.reproject(crs_ET_0)
+clipped_DTM_H2_rxr_reproj.isel(band=0).plot.imshow()
+clipped_DTM_H2_rxr_reproj.rio.resolution()
+clipped_DTM_H2_rxr_reproj.rio.to_raster('../data/Spain/clipped_DTM_H2_Majadas_AOI.tif', 
+                              # compress='LZMA', 
+                              # tiled=True, 
+                              # dtype="int32"
+                              )
+
+
+#%% Read Majadas DTM
+# -----------------------------------------------------------------------------
+# DTM_Global = rio.open_rasterio('../data/Spain/DTM_Global/dem.vrt')
+# DTM_Global.rio.crs 
+# # DTM_Global.rio.resolution() 
+
+# # clipped_DTM_rxr = DTM_Global.rio.clip_box(
+# #                                       minx=majadas_aoi_buff.bounds['minx'],
+# #                                       miny=majadas_aoi_buff.bounds['miny'],
+# #                                       maxx=majadas_aoi_buff.bounds['maxx'],
+# #                                       maxy=majadas_aoi_buff.bounds['maxy'],
+# #                                        crs=majadas_aoi_buff.crs,
+# #                                     ) 
+# # clipped_DTM_rxr.isel(band=0).plot.imshow()
+# # clipped_DTM_rxr_reproj = clipped_DTM_rxr.rio.reproject(crs_ET_0)
+
+
+# clipped_DTM_rxr = DTM_Global.rio.clip_box(
+#                                        minx=majadas_aoi.bounds['minx'],
+#                                        miny=majadas_aoi.bounds['miny'],
+#                                        maxx=majadas_aoi.bounds['maxx'],
+#                                        maxy=majadas_aoi.bounds['maxy'],
+#                                       crs=majadas_aoi.crs,
+#                                     )  
+# clipped_DTM_rxr_reproj = clipped_DTM_rxr.rio.reproject(crs_ET_0)
+# clipped_DTM_rxr_reproj.isel(band=0).plot.imshow()
+# clipped_DTM_rxr_reproj.rio.resolution()
+
+# # dd
+# # clipped_DTM_rxr = DTM_Global.rio.clip(
+# #                                       majadas_aoi_crs.geometry.values,  
+# #                                       # minx=majadas_aoi.bounds['minx'],
+# #                                       # miny=majadas_aoi.bounds['miny'],
+# #                                       # maxx=majadas_aoi.bounds['maxx'],
+# #                                       # maxy=majadas_aoi.bounds['maxy'],
+# #                                       crs=majadas_aoi.crs,
+# #                                     )  
+ 
+
+
+# clipped_DTM_rxr_reproj.isel(band=0).plot.imshow()
+# clipped_DTM_rxr_reproj.rio.to_raster('../data/Spain/DTM_Global/clipped_DTM_Majadas_AOI.tif', 
+#                               # compress='LZMA', 
+#                               # tiled=True, 
+#                               # dtype="int32"
+#                               )
 #%% Look for catchment delineation
 # -----------------------------------------------------------------------------
 # grid = Grid.from_raster('../data/Spain/DTM_Global/clipped_DTM_Majadas_AOI.tif')
@@ -159,22 +196,22 @@ clipped_DTM_rxr_reproj.rio.to_raster('../data/Spain/DTM_Global/clipped_DTM_Majad
         
 #%% Save DEM
 # -----------------------------------------------------------------------------
-dem_rio = rio.open_rasterio('../data/Spain/DTM_Global/clipped_DTM_Majadas_AOI.tif')
-del_catchement = gpd.read_file('../data/Spain/DTM_Global/catchment.shp')
-dem_rio_cliped = dem_rio.rio.clip(
-                                  del_catchement.geometry.values,
-                                  crs=del_catchement.crs,
-                                )  
-dem_rio_cliped.isel(band=0).plot.imshow()
-dem_rio_cliped.rio.to_raster('../data/Spain/DTM_Global/clipped_DTM_Majadas_Bassin.tif', 
-                              # compress='LZMA', 
-                              # tiled=True, 
-                              # dtype="int32"
-                              )
+# dem_rio = rio.open_rasterio('../data/Spain/clipped_DTM_Majadas_AOI.tif')
+# del_catchement = gpd.read_file('../data/Spain/DTM_Global/catchment.shp')
+# dem_rio_cliped = dem_rio.rio.clip(
+#                                   del_catchement.geometry.values,
+#                                   crs=del_catchement.crs,
+#                                 )  
+# dem_rio_cliped.isel(band=0).plot.imshow()
+# dem_rio_cliped.rio.to_raster('../data/Spain/DTM_Global/clipped_DTM_Majadas_Bassin.tif', 
+#                               # compress='LZMA', 
+#                               # tiled=True, 
+#                               # dtype="int32"
+#                               )
 
 #%% plot majadas DTM 
 # -----------------------------------------------------------------------------
-fig, axs = plt.subplots(1,2)
-clipped_DTM_rxr_reproj.isel(band=0).plot.imshow(vmin=0,ax=axs[0])
-majadas_aoi.plot(ax=axs[1],edgecolor='black', facecolor='none')
-fig.savefig(figPath/'DTM_Majadas.png', dpi=300)
+# fig, axs = plt.subplots(1,2)
+# clipped_DTM_rxr_reproj.isel(band=0).plot.imshow(vmin=0,ax=axs[0])
+# majadas_aoi.plot(ax=axs[1],edgecolor='black', facecolor='none')
+# fig.savefig(figPath/'DTM_Majadas.png', dpi=300)

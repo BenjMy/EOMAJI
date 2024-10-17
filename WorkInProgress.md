@@ -23,19 +23,19 @@
   - [ ] create df_daily_waterbalance from mbconv (VIN, VOUT, CUMVIN, STORE1, DSTORE...)
 
 - [ ] **Aquacrop** Long term synthetic water balance modelling (some months)
-  - [ ] create and define how many rain events/ irrigation events
+  - [x] create and define how many rain events/ irrigation events
     - [ ] define **delineation errors** as the difference between (nb of events detected - nb of events)/nb of events
     - [ ] define **quantification errors** as the difference between (mm irr. detected - mm. irr applied)/nb of events
+    - [x] DA with soil and root update during rainfed season
+      - [ ] Plot how much event detected with DA/ without DA?
    (Not really needed)
   - [ ] !varying root depths over time in AquaCrop!
-  - [ ] adjust soil properties to fit AquaCrop inputs
   - [ ] initial_water_content
    
-  - [ ] Use ERA5 to create relevant scenario of ETp (see paper Italian) - ERA5 xarray? ERA5 Land soil moisture simulator luca brocca: Simulator of ERA5 Land soil moisture in the 0-100 cm soil layer (results in the first comment) and I have created 3 scenario by using the climatology 1991-2020: +/- 20% of 		 precipitation, +25% air temperature (as observed in the last years). 
-  See: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview  --> Mean potential evaporation rate	kg m-2 s-1
- 
-- [ ] Varying nb of earth observations --> impact on detection (plot in July)
-- [ ] Varying EO resolutions --> impact on detection (plot in July)
+  - [x] Use ERA5 to create relevant scenario of ETp (see paper Italian) - ERA5 xarray?
+     See: https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview
+  - [ ] Varying nb of earth observations --> impact on detection (plot in July)
+  - [ ] Varying EO resolutions --> impact on detection (plot in July)
 
 
 - [x] Net irrigation accounting plot 1D
@@ -64,9 +64,12 @@ For both it is necessary to write the soil file accordingly
     - [x]define root map with respect to corinne land cover
     - [ ] add EC towers as points of interest
     - [x] check simulation inputs
-    - [ ] compare hydro simulated with TDR real data
+    - [ ] compare with REAL dataset 
+      - [ ] compare hydro simulated with TDR real data
+      - [ ] compare hydro simulated with piezometers real data
     - [ ] **CLASSIFY** interpretation of ETap ratio local/regional VS rain/irrigation event
     - [ ] DA with soil and root update during rainfed season
+      - [ ] Plot how much event detected with DA/ without DA?
     - [ ] Use/Implement Couvreur root water uptake model to account for compensation/competion
   - [ ] Burkina
     - [ ] 📌 Clip to AOI

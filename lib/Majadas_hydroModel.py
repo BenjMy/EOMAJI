@@ -4,7 +4,7 @@
 Created on Fri Aug 16 13:46:29 2024
 
 1a. Import dataset of Earth Observation analysis from TSEB (ds_analysis_EO) that contains:
-    - DAILY Spatial Potential Evapotranspiration at 300m resolution 
+    - DAILY Spatial Potential Evapotranspiration at 30m resolution 
     - DAILY Spatial Rain 
 1b. Import DEM Majadas Catchment and build the mesh
     - Resample so DEM is same size that EO resolution 
@@ -56,7 +56,15 @@ def get_cmd():
     parse = argparse.ArgumentParser()
     process_param = parse.add_argument_group('process_param')
     process_param.add_argument('-prj_name', type=str, help='prj_name',
-                        default='Majadas_test', required=False) 
+                        # default='Majadas_test', 
+                        default='Majadas', 
+                        required=False
+                        ) 
+    process_param.add_argument('-AOI', type=str, help='Area of Interest',
+                        default='Buffer_5000', 
+                        # default='H2_Bassin', 
+                        required=False
+                        ) 
     process_param.add_argument('-het_soil', type=int, help='Heterogeneous soil',
                         default=1, required=False) 
     process_param.add_argument('-WTD', type=float, help='WT height',
@@ -90,7 +98,9 @@ crs_ET = rxr.open_rasterio(ET_0_filelist[0]).rio.crs
 ET_test = rxr.open_rasterio(ET_0_filelist[0])
 
 ds_analysis_EO = utils.read_prepo_EO_datasets(fieldsite='Majadas',
-                                              crs=crs_ET)
+                                              AOI=args.AOI,
+                                              crs=crs_ET
+                                              )
 
 if args.short==True:
     cutoffDate = ['01/01/2023','01/03/2024']
@@ -99,7 +109,11 @@ if args.short==True:
     # Filter the DataArrays using the mask
     ds_analysis_EO = ds_analysis_EO.sel(time=mask_time)
 
-# ds_analysis_EO.ETp.isel(time=0).plot.imshow()
+majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=5000)
+
+# fig, ax = plt.subplots()
+# ds_analysis_EO.ETa.isel(time=1).plot.imshow(ax=ax)
+# majadas_aoi.plot(ax=ax)
 # ds_analysis_EO.RAIN.isel(time=0).plot.imshow()
 
 #%% Look at ETp
@@ -139,7 +153,7 @@ if args.short==True:
 plt.close('all')
 hydro_Majadas = CATHY(
                         dirName='../WB_FieldModels/',
-                        prj_name=args.prj_name
+                        prj_name=args.prj_name + args.AOI
                       )
 hydro_MajadasPath = Path(hydro_Majadas.workdir) / hydro_Majadas.project_name
 
@@ -158,8 +172,8 @@ hydro_MajadasPath = Path(hydro_Majadas.workdir) / hydro_Majadas.project_name
 #%% Create CATHY mesh based on DEM
 # ----------------------------------------------------------------------------
 
-# DTM_rxr = rio.open_rasterio('../data/Spain/DTM_Global/clipped_DTM_Majadas_Bassin.tif')
-DTM_rxr = rio.open_rasterio('../data/Spain/DTM_Global/clipped_DTM_Majadas_AOI.tif')
+DTM_rxr = rio.open_rasterio('../data/Spain/clipped_DTM_Majadas_AOI.tif')
+# DTM_rxr = rio.open_rasterio('../data/Spain/clipped_DTM_H2_Majadas_AOI.tif')
 DTM_rxr = DTM_rxr.where(DTM_rxr != DTM_rxr.attrs['_FillValue'], -9999)
 DTM_rxr.attrs['_FillValue'] = -9999
 fig, ax = plt.subplots(1)
@@ -171,7 +185,12 @@ plt.colorbar(img)
 fig.savefig(figPath/'DEM_Catchement_Majadas.png', dpi=300
             )
 
-# s
+nb_of_valid_cells = (len(DTM_rxr.x)*len(DTM_rxr.y))-509
+nb_of_valid_nodes = nb_of_valid_cells + len(DTM_rxr.x) + len(DTM_rxr.y)
+fill_value = DTM_rxr.attrs['_FillValue']
+no_data_mask_DEM = DTM_rxr.isel(band=0) == fill_value  # This creates a boolean mask
+
+# a
 #%% Update prepro inputs and mesh
 # no topo case 
 # ----------------------------------------------------------------------------
@@ -201,66 +220,44 @@ fig.savefig(figPath/'DEM_Catchement_Majadas.png', dpi=300
 # with topo case 
 # ----------------------------------------------------------------------------
 from rasterio.enums import Resampling
+reprojected_DEM = DTM_rxr.isel(band=0).rio.reproject_match(ds_analysis_EO['ETp'])
 
+reprojected_DEM = DTM_rxr.isel(band=0).rio.reproject(
+                                        DTM_rxr.rio.crs,
+                                        shape=(len(ds_analysis_EO['ETp'].y),
+                                               len(ds_analysis_EO['ETp'].x)),
+                                        resampling=Resampling.bilinear,
+                                    )
 
-# resampled_DTM_rxr = DTM_rxr.rio.reproject(
-#                                         DTM_rxr.rio.crs,
-#                                         shape=(50,50),
-#                                         resampling=Resampling.bilinear,
-#                                     )
-# DTM_rxr.isel(band=0).plot.imshow()
-# ds_analysis_EO['ETp'].isel(time=0).plot.imshow()
-
-# resampled_EO_ETp = ds_analysis_EO['ETp'].rio.reproject(
-#                                         ET_test.rio.crs,
-#                                         # shape=DTM_rxr.isel(band=0).shape,
-#                                         shape=(50,50),
-#                                         resampling=Resampling.bilinear,
-#                                         )
-
-# resampled_EO_Rain = ds_analysis_EO['RAIN'].rio.reproject(
-#                                         ET_test.rio.crs,
-#                                         # shape=DTM_rxr.isel(band=0).shape,
-#                                         shape=(50,50),
-#                                         resampling=Resampling.bilinear,
-#                                         )
-# resampled_EO_Rain.isel(time=0).plot.imshow()
+no_data_mask_DEM = reprojected_DEM == fill_value
 
 # catchement topo case 
 # ----------------------------------------------------------------------------
 hydro_Majadas.update_prepo_inputs(
-                                DEM=DTM_rxr.isel(band=0).to_numpy(),
-                                delta_x = 90,
-                                delta_y = 90,
+                                DEM=reprojected_DEM.to_numpy(),
+                                delta_x = int(abs(reprojected_DEM.rio.resolution()[0])),
+                                delta_y = int(abs(reprojected_DEM.rio.resolution()[1])),
                                 # dr  = 1,
                                 # delta_x = int(abs(DTM_rxr.rio.resolution()[1])),
                                 # delta_y = int(abs(DTM_rxr.rio.resolution()[0])),
-                                # base=60,
-                                xllcorner=DTM_rxr.x.min().values,
-                                yllcorner=DTM_rxr.y.min().values,
-                                # dr = int(abs(DTM_rxr.rio.resolution()[1]))/2,
+                                base=5,
+                                xllcorner=reprojected_DEM.x.min().values,
+                                yllcorner=reprojected_DEM.y.min().values,
+                                # dr = int(abs(reprojected_DEM.rio.resolution()[1]))/2,
+                                dr = 1,
                                 # ivert=4
                                 )
 
 fig = plt.figure()
 ax = plt.axes(projection="3d")
 hydro_Majadas.show_input(prop="dem", ax=ax)
-# dd
-# hydro_Majadas.run_preprocessor(verbose=True)
-# Count non-NaN values along a specific dimension
-# non_nan_count = resampled_EO_ETp.isel(time=0).count()
 hydro_Majadas.create_mesh_vtk(verbose=True)
-# hydro_Majadas.grid3d['mesh3d_nodes'][:,2]
-
-# print(hydro_Majadas.grid3d['nnod'])
-# s
-
 grid3d = hydro_Majadas.read_outputs('grid3d')
 
 #%% Show mesh
 # -----------------------------------------------------------------------------
 
-pl = pv.Plotter()
+pl = pv.Plotter(off_screen=True)
 mesh = pv.read(f'{hydro_MajadasPath}/vtk/{hydro_Majadas.project_name}.vtk')
 pl.add_mesh(mesh,show_edges=True)
 pl.set_scale(zscale=3)
@@ -269,21 +266,43 @@ pl.view_xz()
 pl.show()
 pl.screenshot(f'{figPath}/{hydro_Majadas.project_name}.png')
 
+#%% PAD RAIN and ETp
+ETp_meshnodes = Majadas_utils.xarraytoDEM_pad(ds_analysis_EO['ETp'])
+Rain_meshnodes = Majadas_utils.xarraytoDEM_pad(ds_analysis_EO['RAIN'])
+
+# ETp_meshnodes = ds_analysis_EO['ETp']
+# Rain_meshnodes = ds_analysis_EO['RAIN']
+
+
+# fig, axs = plt.subplots(2)
+# ETp_meshnodes.isel(time=0).plot.imshow(ax=axs[0])
+# ds_analysis_EO['ETp'].isel(time=0).plot.imshow(ax=axs[1])
+
 #%% Update atmbc according to EO
 # -----------------------------------------------------------------------------
 ds_analysis_EO['Elapsed_Time_s'] = (ds_analysis_EO.time - ds_analysis_EO.time[0]).dt.total_seconds()
 
-RAIN_3d = np.array([ds_analysis_EO['RAIN'].isel(time=t).values for t in range(ds_analysis_EO['RAIN'].sizes['time'])])
-ETp_3d = np.array([ds_analysis_EO['ETp'].isel(time=t).values for t in range(ds_analysis_EO['ETp'].sizes['time'])])
+RAIN_3d = np.array([Rain_meshnodes.isel(time=t).values for t in range(ds_analysis_EO['RAIN'].sizes['time'])])
+# RAIN_3d = np.array([ds_analysis_EO['RAIN'].isel(time=t).values for t in range(ds_analysis_EO['RAIN'].sizes['time'])])
+ETp_3d = np.array([ETp_meshnodes.isel(time=t).values for t in range(ds_analysis_EO['ETp'].sizes['time'])])
+
+# np.shape(RAIN_3d)
+
+# utils.pad
 
 v_atmbc = RAIN_3d*(1e-3/86400) - ETp_3d*(1e-3/86400)
 v_atmbc_reshaped = v_atmbc.reshape(v_atmbc.shape[0], -1)
-# np.shape(v_atmbc_reshaped)
+# v_atmbc = np.ravel(v_atmbc)
 
 np.shape(np.zeros([len(list(ds_analysis_EO['Elapsed_Time_s'].values)),
                             int(grid3d['nnod'])]
                   )
 )
+
+int(grid3d['nnod'])
+np.shape(v_atmbc_reshaped)
+grid3d
+
 non_nan_count = np.count_nonzero(~np.isnan(RAIN_3d[0].flatten()))
 # non_nan_count = np.count_nonzero(~np.isnan(v_atmbc_reshaped[0]))
 
@@ -329,51 +348,53 @@ hydro_Majadas.update_ic(
 #%% Update root depth according to CLC mapping
 # -----------------------------------------------------------------------------
 
-CLC_Majadas_clipped_grid = xr.open_dataset('../prepro/Majadas/CLCover_Majadas.netcdf',
+CLC_Majadas_clipped_grid = xr.open_dataset(f'../prepro/Majadas/{args.AOI}/CLCover_Majadas.netcdf',
                                             # engine='scipy'
                                            )
 
-# CLC_Majadas_clipped_grid.Code_18.plot.imshow()
+# CLC_Majadas_clipped_grid.Code_18_str
+
+# ss
 
 CLC_Majadas_clipped_grid.rio.resolution()
 CLC_Majadas_clipped_grid = CLC_Majadas_clipped_grid.rio.write_crs(crs_ET)
-CLC_Majadas_clipped_grid.rio.crs
-# new_resolution = (300, 300)  # 300x300 meter resolution
-# CLC_Majadas_resampled = CLC_Majadas_clipped_grid.rio.reproject(
-#                                                                 CLC_Majadas_clipped_grid.rio.crs,  # Keep the current CRS
-#                                                                 resolution=new_resolution           # Set the new resolution
-#                                                             )
+crsCLC = CLC_Majadas_clipped_grid.rio.crs
+# CLC_Majadas_clipped_grid_new = CLC_Majadas_clipped_grid.drop_vars('Code_18_str')
+
+reprojected_CLC_Majadas = CLC_Majadas_clipped_grid.rio.reproject_match(ds_analysis_EO['ETp'])
 
 CLC_codes = utils.get_CLC_code_def()
 
 print('build lookup table for root depth')
-CLC_Majadas_clipped_grid
-CLC_Majadas_clipped_grid.Code_18_str.values
-code18_values_unique = np.unique(CLC_Majadas_clipped_grid.Code_18.values)
-code18_str_values_unique = np.unique(CLC_Majadas_clipped_grid.Code_18_str.values)
+code18_values_unique = np.unique(reprojected_CLC_Majadas.Code_18.values)
+CLC_values_unique = np.unique(CLC_Majadas_clipped_grid.Code_CLC.values)
 
-code18_str_rootmap_indice = [ (cci,i+1) for i, cci in enumerate(code18_str_values_unique)]
+code18_str_rootmap_indice = [ (cci,i+1) for i, cci in enumerate(CLC_values_unique[:-1])]
 replacement_dict = dict(code18_str_rootmap_indice)
-replacement_dict['nodata'] = 0
+replacement_dict[np.nan] = 0
 
-
-mapped_data = np.copy(CLC_Majadas_clipped_grid.Code_18.values)
+mapped_data = np.zeros(np.shape(reprojected_CLC_Majadas.Code_CLC))
+i = 1
 for key, value in replacement_dict.items():
-    mapped_data[CLC_Majadas_clipped_grid.Code_18_str.values == key] = value
+    mapped_data[reprojected_CLC_Majadas.Code_CLC.values == key] = i
+    if np.sum(reprojected_CLC_Majadas.Code_CLC.values == key) > 1:
+        i += 1 
 
-print('!dimension of CLCover is 24*21 but should be 23*20!')
+# np.shape(CLC_Majadas_clipped_grid.Code_CLC.values)
+
+# print('!dimension of CLCover is 24*21 but should be 23*20!')
 # mapped_data = mapped_data - min_veg_data_shift + 1
-mapped_data = mapped_data[1:,0:-1] 
-
+# mapped_data = mapped_data[1:,0:-1] 
+reprojected_CLC_Majadas.Code_CLC.where(reprojected_CLC_Majadas.Code_CLC==244.).plot.imshow()
 # ss
 #%%
-mapped_data = mapped_data[1:,0:-1] 
-min_veg_data_shift = np.min(mapped_data)
+# mapped_data = mapped_data[1:,0:-1] 
+# min_veg_data_shift = np.min(mapped_data)
 # np.shape(mapped_data[0:-1,0:-1])
 
-print(len(np.unique(mapped_data)))
+# print(len(np.unique(mapped_data)))
 hydro_Majadas.update_veg_map(mapped_data)
-print(hydro_Majadas.MAXVEG)
+# print(hydro_Majadas.MAXVEG)
 
 fig, ax = plt.subplots()
 hydro_Majadas.show_input('root_map',ax=ax,
@@ -392,22 +413,25 @@ try:
     FP_new.index.name = 'Veg. Indice'
 except:
     SPP, FP = hydro_Majadas.read_inputs('soil',
-                                        MAXVEG=len(np.unique(mapped_data))-1
+                                        MAXVEG=len(np.unique(mapped_data))
                                         ) #,MAXVEG=15)
     FP_new = FP
-
-for rd in replacement_dict.keys():
-    if rd != 'nodata':
-        code_str = CLC_codes[rd]
+    
+    
+for rd, value in replacement_dict.items():
+    if str(rd) !='nan':
+        code_str = CLC_codes[str(int(rd))]
         try:
+            print(rd,code_str,CLC_root_depth[code_str])
             Rootdepth = CLC_root_depth[code_str]
         except:
             Rootdepth = 1e-3
     else:
         Rootdepth = 1e-3
-    idveg = replacement_dict[rd] - min_veg_data_shift +1
+    idveg = replacement_dict[rd]
     if np.sum((idveg==FP_new.index))==1:
         FP_new.loc[idveg,'ZROOT'] = Rootdepth
+        print(idveg,Rootdepth)
 
 # FP_new[1:]
 # print(hydro_Majadas.MAXVEG)
@@ -420,11 +444,16 @@ hydro_Majadas.update_soil(
                           )
 # hydro_Majadas.cathyH
 
-fig, ax = plt.subplots(1)
-hydro_Majadas.show_input(prop="root_map", ax=ax,
-                         # linewidth=0
-                         )
-
+# from pyCATHY.plotters import cathy_plots as plt_CT
+# update_map_veg = hydro_Majadas.map_prop_veg(FP_new)
+# fig, ax = plt_CT.dem_plot_2d_top(update_map_veg,
+#                                  label="all"
+#                                  )
+# fig, ax = plt.subplots(1)
+# hydro_Majadas.show_input(prop="root_map", ax=ax,
+#                          # linewidth=0
+#                          )
+# aa
 #%% Run simulation
 len(ds_analysis_EO['Elapsed_Time_s'].values)
 
@@ -437,7 +466,6 @@ hydro_Majadas.update_parm(
                         IPRT=4,
                         VTKF=0,
                         )
-
 #%%
 hydro_Majadas.run_processor(
                       IPRT1=2,

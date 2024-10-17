@@ -22,12 +22,14 @@ import Majadas_utils
 import utils
 
 #%% Define path and crs projection 
-
+AOI = 'Buffer_5000' #H2_Bassin
 # rootDataPath = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/MAJADAS/')
 prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
 rootDataPath = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/MAJADAS/')
 figPath = Path('../figures/Majadas_test')
 folder_weather_path = rootDataPath/'E030N006T6'
+
+crs_ET_0 = Majadas_utils.get_crs_ET()
 
 #%% Read AOI points and plots
 # -----------------------------------------------------------------------------
@@ -45,6 +47,11 @@ majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=5000)
 # larger_aoi_gdf.to_file(output_path)
 
 majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
+
+
+majadas_aoi = gpd.read_file('../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
+majadas_aoi.to_crs(crs_ET_0, inplace=True)
+
 # a
 #%% Define files outputs from TSEB for Majadas
 # -----------------------------------------------------------------------------
@@ -61,7 +68,7 @@ ET_test = rxr.open_rasterio(ET_0_filelist[0])
 #%% Read and CLIP ! Majadas grids: S3/Meteo = E030N006T6 and S2/Landast = X0033_Y0044
 # S3/Meteo EPGS CRS EPSG:27704 - WGS 84 / Equi7 Europe - Projected
 # ss
-reprocess = True
+reprocess = False
 if reprocess:
     #% CLIP to Majadas bassin
     # -------------------------------------------------------------------------
@@ -88,11 +95,11 @@ if reprocess:
     
 
 else:   
-    ETa_ds = xr.open_dataset('../prepro/Majadas/ETa_Majadas.netcdf')
+    ETa_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETa_Majadas.netcdf')
     ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
-    ETp_ds = xr.open_dataset('../prepro/Majadas/ETp_Majadas.netcdf')
+    ETp_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETp_Majadas.netcdf')
     ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
-    RAIN_ds = xr.open_dataset('../prepro/Majadas/RAIN_Majadas.netcdf')
+    RAIN_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/RAIN_Majadas.netcdf')
     RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
 
 #%% Read TDR Majadas
@@ -126,10 +133,8 @@ CLC_clipped = gpd.clip(CLC_Majadas,
                         majadas_aoi
                         )
 
-CLC_clipped
 
-
-clc_codes_int = [int(clci) for clci in clc_codes.keys()]
+# clc_codes_int = [int(clci) for clci in clc_codes.keys()]
 categorical_enums = {'Code_18': clc_codes}
 
 # shapefile to raster with 300 m resolution
@@ -147,43 +152,52 @@ Code_18_Majadas = CLC_Majadas_clipped_grid['Code_18'].astype(int)
 Code_18_categories = CLC_Majadas_clipped_grid['Code_18_categories']
 Code_18_string = Code_18_categories[Code_18_Majadas].drop('Code_18_categories')
 
-    
-CLC_Majadas_clipped_grid['Code_18_str'] = Code_18_string
+CLC_Majadas_clipped_grid['Code_CLC'] = Code_18_string
 CLC_Majadas_clipped_grid = CLC_Majadas_clipped_grid.rio.write_crs(crs_ET)
 nodata_value = CLC_Majadas_clipped_grid.Code_18.rio.nodata
 
-CLC_Majadas_clipped_grid['Code_18']= CLC_Majadas_clipped_grid.Code_18.where(CLC_Majadas_clipped_grid.Code_18 != nodata_value, -9999)
+# CLC_Majadas_clipped_grid['Code_18']= CLC_Majadas_clipped_grid.Code_18.where(CLC_Majadas_clipped_grid.Code_18 != nodata_value, -9999)
+
+# ss
+# Step 1: Replace 'nodata' with NaN
+CLC_Majadas_clipped_grid['Code_CLC']= CLC_Majadas_clipped_grid.Code_CLC.where(
+    CLC_Majadas_clipped_grid.Code_CLC != 'nodata', other=np.nan
+)
+
+# Step 2: Convert the remaining string values to integers
+CLC_Majadas_clipped_grid['Code_CLC'] = CLC_Majadas_clipped_grid.Code_CLC.astype(float)
+
 
 # export to netcdf
 # -----------------------------------------
-CLC_Majadas_clipped_grid.to_netcdf('../prepro/Majadas/CLCover_Majadas.netcdf')
+CLC_Majadas_clipped_grid.to_netcdf(f'../prepro/Majadas/{AOI}/CLCover_Majadas.netcdf')
 
 
 # plot
 # -----------------------------------------
 fig, ax = plt.subplots()
-CLC_Majadas_clipped_grid.Code_18.plot(cmap='Paired',
+CLC_Majadas_clipped_grid.Code_CLC.plot(cmap='Paired',
                                       vmin=0
                                       )
 
-unique_labels = np.unique(Code_18_string.values)[:-1]
+unique_labels = np.unique(CLC_Majadas_clipped_grid.Code_CLC.values) #[:-1]
 # s
 #%% Plot sum up preparation of inputs 
 # -----------------------------------------------------------------------------
 
 
-# Extract the categorical mapping (if available)
+# # Extract the categorical mapping (if available)
 categories = CLC_Majadas_clipped_grid['Code_18_categories'].values
 
-# Create a dictionary mapping the Code_18 values to the categories
+# # Create a dictionary mapping the Code_18 values to the categories
 category_mapping = {i: cat for i, cat in enumerate(categories)}
 
-# Extract the Code_18 data
-code_18_data = CLC_Majadas_clipped_grid['Code_18']
+# # Extract the Code_18 data
+# code_18_data = CLC_Majadas_clipped_grid['Code_18']
 
 # Define a colormap for the categories
-cmap = mcolors.ListedColormap(plt.cm.get_cmap('tab20').colors[:len(categories)])
-norm = mcolors.BoundaryNorm(boundaries=range(len(categories) + 1), ncolors=len(categories))
+cmap = mcolors.ListedColormap(plt.cm.get_cmap('tab20').colors[:len(unique_labels)])
+norm = mcolors.BoundaryNorm(boundaries=range(len(unique_labels) + 1), ncolors=len(unique_labels))
 
 # Plot using imshow with the defined colormap
 fig, axs = plt.subplots(2,2,
