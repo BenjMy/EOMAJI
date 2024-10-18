@@ -1,6 +1,6 @@
 def load_scenario(idnb):
     if idnb==0:
-        sc = load_s0()
+        sc, scenario_EO = load_s0()
     elif idnb==1:
         sc = load_s1()
     elif idnb==2:
@@ -13,7 +13,7 @@ def load_scenario(idnb):
         sc = load_s5()
     elif idnb==6:
         sc = load_s0_microwawes()
-    return sc 
+    return sc, scenario_EO 
 
 
 # ETP PARAMETERS
@@ -52,7 +52,7 @@ ETp_window_size_x = 10 # size of the window in pixels to compute the rolling mea
 PMIN = -1e30
 pressure_head_ini = -200
 POROSITY = 0.60
-PERMX = 1e-6
+PERMX = 1e-5
 
 
 threshold_localETap = 0.3
@@ -72,8 +72,7 @@ def load_s0():
                 # ---------------
                 'PMIN': PMIN,
                 'pressure_head_ini': pressure_head_ini,
-                'porosity': POROSITY,
-                'PERMX': [PERMX],
+
 
                 # ETP PARAMETERS
                 # ---------------------
@@ -110,11 +109,17 @@ def load_s0():
                 # THRESHOLD
                 # ---------
                 'threshold_localETap': threshold_localETap,
-                'threshold_regionalETap': threshold_regionalETap,
-
-        
+                'threshold_regionalETap': threshold_regionalETap,        
         }
-    return scenario
+    
+    scenario_EO = {
+        
+                # 'porosity': POROSITY,
+                'PERMX': [PERMX], #Varying PERMX between EO and baseline
+                
+                }
+    
+    return scenario, scenario_EO
         
 def load_s1():
     # Same than s0 with a rain event all over the regional domain before irrigation

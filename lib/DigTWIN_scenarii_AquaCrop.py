@@ -10,13 +10,11 @@ from aquacrop.utils import prepare_weather, get_filepath
 
 import xarray as xr
 import rioxarray as rio
-from pathlib import Path
 import Majadas_utils
 import contextily as cx
 import matplotlib.pyplot as plt
 import pandas as pd
 
-dataPath = Path('../data/Spain/Spain_ETp_Copernicus_CDS/')
 from DigTWIN_scenarii import load_scenario
 import scenarii2pyCATHY
 import argparse
@@ -27,6 +25,7 @@ import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 import datetime
 from shapely.geometry import box
+from pathlib import Path
 
 #%%
 def get_cmd():
@@ -58,192 +57,41 @@ def get_cmd():
                                required=False
                                )    
     process_param.add_argument('-ApplyEOcons', 
-                               type=int, 
+                               type=str, 
                                help='Applying EO cons',
-                               default=1, # only 1 patch of irrigation
+                               default=None, # only 1 patch of irrigation
                                required=False
                                )    
     args = parse.parse_args()
     return(args)    
 
+rootPath = Path(os.getcwd())
+dataPath = Path(rootPath / '../data/Spain/Spain_ETp_Copernicus_CDS/')
+
 args = get_cmd() 
-figpath = Path(f'../figures/scenario_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}')
+figpath = Path(rootPath /f'../figures/scenario_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}')
 figpath.mkdir(parents=True, exist_ok=True)
 #%%
 # run_process = True # don't rerun the hydro model
 # scenario_nb = 3
-sc = load_scenario(args.scenario_nb)
+sc, scenario_EO = load_scenario(args.scenario_nb)
 
 #%% ERA5 reanalysis data in Spain
 # -----------------------------------------------------------------------------
+analysis_xr = utils.prep_ERA5_reanalysis_data_SPAIN(dataPath)
 
-# ERA5ds = xr.open_dataset(dataPath / 'test/data_stream-oper.nc')
-
-ERA5ds = xr.open_dataset(dataPath /'data_SPAIN_ERA5_singlelevel_hourly.nc')
-ERA5ds = ERA5ds.rio.write_crs("EPSG:4326")
-
-
-# Central point in lat/lon
-central_lat = 39.978757
-central_lon = -5.81843
-
-# Calculate the degree distance for 7.5 km
-delta_lat = 100 / 111  # Approximate change in degrees latitude
-delta_lon = 100 / (111 * np.cos(np.radians(central_lat)))  # Change in degrees longitude
-
-# Define the bounding box in lat/lon
-min_lat = central_lat - delta_lat
-max_lat = central_lat + delta_lat
-min_lon = central_lon - delta_lon
-max_lon = central_lon + delta_lon
-
-# Crop the dataset using the bounding box
-cropped_ERA5ds = ERA5ds.sel(latitude=slice(max_lat, min_lat), longitude=slice(min_lon, max_lon))
-
-
-#%%
-
-fig, ax = plt.subplots()
-ERA5ds.pev.isel(valid_time=0).plot.imshow(ax=ax,
-                                        add_colorbar=False
-                                        )
-ax.set_aspect('equal')
-# cx.add_basemap(ax, 
-#                 crs=cropped_ERA5ds.rio.crs,
-#                 alpha=0.4,
-#                 # credit=False
-#                 )
-# Resample to daily frequency and calculate the mean for each day
-# daily_ERA5ds = cropped_ERA5ds.resample(valid_time='1D').mean().mean(['latitude','longitude'])
-
-# cropped_ERA5ds['mint2m'] = cropped_ERA5ds.resample(valid_time='1D').min('t2m').mean(['latitude','longitude'])
-maxt2m = cropped_ERA5ds.resample(valid_time='1D').max().mean(['latitude','longitude'])['t2m']
-mint2m  = cropped_ERA5ds.resample(valid_time='1D').min().mean(['latitude','longitude'])['t2m']
-sumtp = cropped_ERA5ds.resample(valid_time='1D').sum().mean(['latitude','longitude'])['tp']
-sumpev  = cropped_ERA5ds.resample(valid_time='1D').sum().mean(['latitude','longitude'])['pev']
-
-# Create a new Dataset with the calculated variables
-analysis_xr = xr.Dataset({
-    'maxt2m': maxt2m - 273.15,
-    'mint2m': mint2m - 273.15,
-    'sumtp': sumtp*1000,
-    'sumpev': abs(sumpev)*1000
-})
-
-# Optionally, you can assign attributes to the dataset
-analysis_xr.attrs['description'] = 'Daily aggregated statistics from the cropped ERA5 dataset'
-# analysis_xr.attrs['units'] = {
-#     'maxt2m': 'K',
-#     'mint2m': 'K',
-#     'sumtp': 'm',
-#     'meanpev': 'm'
-# }
-#%%
-# ss
-
-#%%
-
-# Create scenarios
+#%% # Create scenarios
 # Scenario 1: +20% precipitation
-
-scenario_analysis = analysis_xr.copy()
-if args.weather_scenario == 'plus20p_tp':
-    scenario_analysis = analysis_xr.copy()
-    scenario_analysis['sumtp'] = scenario_analysis['sumtp'] * 1.20
-elif args.weather_scenario =='minus20p_tp':
-    # Scenario 2: -20% precipitation
-    scenario_analysis = analysis_xr.copy()
-    scenario_analysis['sumtp'] = scenario_analysis['sumtp'] * 0.80
-elif args.weather_scenario =='plus25p_t2m':
-    # Scenario 3: +25% air temperature
-    scenario_analysis = analysis_xr.copy()
-    scenario_analysis['maxt2m'] = scenario_analysis['maxt2m'] * 1.25
-    scenario_analysis['mint2m'] = scenario_analysis['mint2m'] * 1.25
-
-dataPath = Path('../data/Spain/Spain_ETp_Copernicus_CDS/')
-# Save the scenario datasets to new NetCDF files
-analysis_xr.to_netcdf(dataPath/'era5_scenario_ref.nc')
-scenario_analysis.to_netcdf(f'{dataPath}/era5_scenario{args.scenario_nb}_weather_{args.weather_scenario}.nc')
-# scenario_analysis
-
-# scenario2.to_netcdf(dataPath/'era5_scenario2_precipitation_minus20.nc')
-# scenario3.to_netcdf(dataPath/'era5_scenario3_temperature_plus25.nc')
-# scenario1.to_netcdf(dataPath/'era5_scenario1_precipitation_plus20.nc')
-# scenario2.to_netcdf(dataPath/'era5_scenario2_precipitation_minus20.nc')
-# scenario3.to_netcdf(dataPath/'era5_scenario3_temperature_plus25.nc')
-
-wdf = analysis_xr.to_dataframe()
-wdf = wdf.reset_index()
-wdf = wdf.rename(columns={
-    'valid_time': 'Date', 
-    'maxt2m': 'MaxTemp', 
-    'mint2m': 'MinTemp', 
-    'sumpev': 'ReferenceET', 
-    'sumtp': 'Precipitation'
-})
-wdf = wdf[['MinTemp','MaxTemp','Precipitation','ReferenceET','Date']]
-
-#%%
+wdf, scenario_analysis = utils.create_scenario_ERA5(analysis_xr,args)
 
 fig, axs = plt.subplots(3,1,sharex=True)
-analysis_xr.plot.scatter(x='valid_time',
-                            y='sumpev',
-                            ax=axs[0],
-                            color='k',
-                            s=2
-                            )
-scenario_analysis.plot.scatter(x='valid_time',
-                            y='sumpev',
-                            ax=axs[0],
-                            color='red',
-                            s=2
-                            )
-analysis_xr.plot.scatter(x='valid_time',
-                            y='maxt2m',
-                            ax=axs[1],
-                            color='k',
-                            s=2
-                            )
-analysis_xr.plot.scatter(x='valid_time',
-                            y='mint2m',
-                            ax=axs[1],
-                            color='k',
-                            s=2
-                            )
-scenario_analysis.plot.scatter(x='valid_time',
-                            y='mint2m',
-                            ax=axs[1],
-                            color='r',
-                            s=2
-                            )
-scenario_analysis.plot.scatter(x='valid_time',
-                            y='maxt2m',
-                            ax=axs[1],
-                            color='r',
-                            s=2
-                            )
-scenario_analysis.plot.scatter(x='valid_time',
-                        y='sumtp',
-                        ax=axs[2],
-                        color='r',
-                        s=2
-                        )
-analysis_xr.plot.scatter(x='valid_time',
-                        y='sumtp',
-                        ax=axs[2],
-                        color='k',
-                        s=2
-                        )
-axs[0].set_title('')
-axs[1].set_title('')
-axs[2].set_title('')
-axs[0].set_xlabel('')
-axs[1].set_xlabel('')
-
+utils.plot_weather_ET_timeserie(analysis_xr,
+                                scenario_analysis,
+                                axs
+                                )
 plt.savefig(figpath/'scenario_inputs.png',
             dpi=300,
             )
-
 #%% AquaCrop model parameters 
 # -----------------------------------------------------------------------------
 # path = get_filepath('champion_climate.txt')
@@ -253,23 +101,12 @@ plt.savefig(figpath/'scenario_inputs.png',
 # wdf_test.iloc[13335]
 #%%
 # wdf_Tnew = wdf.drop('MinTemp',axis=1)
-sim_start = wdf.Date.iloc[0].strftime('%Y/%m/%d')
-sim_end = wdf.Date.iloc[365].strftime('%Y/%m/%d')
-soil= Soil('SandyLoam')
-crop = Crop('Maize',
-            planting_date='07/06'
-            )
-initWC = InitialWaterContent(value=['FC'])
-labels=[]
-outputs=[]
-smt = args.SMT
-crop.Name = str(smt) # add helpfull label
-labels.append(str(smt))
-
-# SMT (list):  Soil moisture targets (%taw) to maintain in each growth stage (only used if irrigation method is equal to 1)
-irr_mngt = IrrigationManagement(irrigation_method=1,
-                                SMT=[smt]*4 # same for each developement growth stages 
-                                ) # specify irrigation management
+(sim_start, 
+ sim_end, 
+ soil, 
+ crop, 
+ initWC, 
+ irr_mngt) = utils.prep_AQUACROP_inputs(wdf,args)
 
 #%%
 # ss
@@ -285,7 +122,6 @@ model.run_model(
     ) # run model till the end
 # outputs.append(model._outputs.final_stats) # save results
 
-# aa
 #%% Crop developement
 # -----------------------------------------------------------------------------
 # model.soil
@@ -300,11 +136,7 @@ crop_growth.z_root
 # dap: day after planting
 # TrPot (float): Daily potential transpiration
 # z_gw (float): groundwater depth
-
 water_flux = model.get_water_flux()
-# water_flux.columns
-# water_storage = model.get_water_storage()
-
 water_flux.IrrDay.values
 model.irrigation_management
 # model.field_management
@@ -327,21 +159,18 @@ sc_df = pd.DataFrame.from_dict(sc,orient='index').T
 # sc_df = pd.read_csv('EOMAJI_synthetic_log.csv',index_col=False)
 
 #%% Quality 
-
 # quality_check = {}
 # quality_check['nb_of_irr_events'] = np.count_nonzero(model.weather_df.Precipitation.values)
 # quality_check['nb_of_rain_events'] = np.count_nonzero(wdf.Precipitation)
-
 #%% Paths
 prj_name = f'EOMAJI_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}_SMT_{args.SMT}_EOcons_{args.ApplyEOcons}' 
 sc['figpath'] = figpath
 #%% Simulate with irrigation atmospheric boundary conditions
 # ----------------------------------------------------------
-
-sc_EO = utils.check_and_tune_E0_dict(sc)
-
-if args.ApplyEOcons==1:
-    sc_withirr = sc | sc_EO
+# s
+# sc_EO = utils.check_and_tune_E0_dict(sc)
+if args.ApplyEOcons is not None:
+    sc_withirr = sc | scenario_EO
 else:
     sc_withirr = sc
 
@@ -350,6 +179,9 @@ simu_with_IRR, grid_xr_with_IRR = scenarii2pyCATHY.setup_cathy_simulation(
                                                                          scenario=sc_withirr,
                                                                          with_irrigation=True,
                                                                     )
+
+# sc['PERMX']
+
 if args.run_process:
     simu_with_IRR.run_processor(
                                 IPRT1=2,

@@ -24,7 +24,7 @@ python DigTWIN_irrigation_delineation.py -scenario_nb 5 -run_process 1
 ###############################
 #####  Synthetic AQUACROP  ####
 ###############################
-python DigTWIN_scenarii_AquaCrop.py -scenario_nb 0 -run_process 1 -weather_scenario reference -SMT 70
+python DigTWIN_scenarii_AquaCrop.py -scenario_nb 0 -run_process 1 -weather_scenario reference -SMT 70 -ApplyEOcons PERMX
 python DigTWIN_scenarii_AquaCrop.py -scenario_nb 0 -run_process 1 -weather_scenario plus20p_tp -SMT 70
 python DigTWIN_scenarii_AquaCrop.py -scenario_nb 0 -run_process 1 -weather_scenario minus20p_tp -SMT 70
 python DigTWIN_scenarii_AquaCrop.py -scenario_nb 0 -run_process 1 -weather_scenario plus25p_t2m -SMT 70

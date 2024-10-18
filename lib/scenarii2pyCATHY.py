@@ -424,7 +424,7 @@ def setup_cathy_simulation(
     
     #%% Create a simulation object
     # -------------------------------------------------------------------------
-    simu = CATHY(dirName='../WB_twinModels/', 
+    simu = CATHY(dirName='../WB_twinModels/AQUACROP/', 
                  prj_name=prj_name
                  )
 
