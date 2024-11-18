@@ -24,7 +24,6 @@ Created on Fri Aug 16 13:46:29 2024
 3. Run hydrological model
 
 """
-
 import xarray as xr
 import numpy as np
 
