@@ -15,5 +15,6 @@ dependencies:
     - shapely
     - contextily
     - pip
+    - pip:
       - cdsapi
       - cftime

@@ -15,7 +15,8 @@ import contextily as cx
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from DigTWIN_scenarii import load_scenario
+dataPath = Path('../data/Spain/Spain_ETp_Copernicus_CDS/')
+from TWIN_scenarii import load_scenario
 import scenarii2pyCATHY
 import argparse
 import utils
@@ -31,44 +32,44 @@ from pathlib import Path
 def get_cmd():
     parse = argparse.ArgumentParser()
     process_param = parse.add_argument_group('process_param')
-    process_param.add_argument('-run_process', 
-                               type=int, 
+    process_param.add_argument('-run_process',
+                               type=int,
                                help='run_process',
-                               default=1, 
+                               default=1,
                                required=False
-                               ) 
-    process_param.add_argument('-scenario_nb', 
-                               type=int, 
+                               )
+    process_param.add_argument('-scenario_nb',
+                               type=int,
                                help='scenario_nb',
                                default=0, # only 1 patch of irrigation
                                required=False
-                               ) 
-    process_param.add_argument('-weather_scenario', 
-                               type=str, 
+                               )
+    process_param.add_argument('-weather_scenario',
+                               type=str,
                                help='weather_scenario',
-                                default='reference', 
-                               # default='plus20p_tp', 
+                                default='reference',
+                               # default='plus20p_tp',
                                required=False
-                               )     
-    process_param.add_argument('-SMT', 
-                               type=int, 
+                               )
+    process_param.add_argument('-SMT',
+                               type=int,
                                help='SMT %TAW (total available water',
                                default=70, # only 1 patch of irrigation
                                required=False
-                               )    
-    process_param.add_argument('-ApplyEOcons', 
-                               type=str, 
+                               )
+    process_param.add_argument('-ApplyEOcons',
+                               type=str,
                                help='Applying EO cons',
                                default=None, # only 1 patch of irrigation
                                required=False
-                               )    
+                               )
     args = parse.parse_args()
-    return(args)    
+    return(args)
 
 rootPath = Path(os.getcwd())
 dataPath = Path(rootPath / '../data/Spain/Spain_ETp_Copernicus_CDS/')
 
-args = get_cmd() 
+args = get_cmd()
 figpath = Path(rootPath /f'../figures/scenario_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}')
 figpath.mkdir(parents=True, exist_ok=True)
 #%%
@@ -92,7 +93,7 @@ utils.plot_weather_ET_timeserie(analysis_xr,
 plt.savefig(figpath/'scenario_inputs.png',
             dpi=300,
             )
-#%% AquaCrop model parameters 
+#%% AquaCrop model parameters
 # -----------------------------------------------------------------------------
 # path = get_filepath('champion_climate.txt')
 # wdf_test = prepare_weather(path)
@@ -101,11 +102,11 @@ plt.savefig(figpath/'scenario_inputs.png',
 # wdf_test.iloc[13335]
 #%%
 # wdf_Tnew = wdf.drop('MinTemp',axis=1)
-(sim_start, 
- sim_end, 
- soil, 
- crop, 
- initWC, 
+(sim_start,
+ sim_end,
+ soil,
+ crop,
+ initWC,
  irr_mngt) = utils.prep_AQUACROP_inputs(wdf,args)
 
 #%%
@@ -130,7 +131,7 @@ crop_growth = model.get_crop_growth()
 # crop_growth.columns
 crop_growth.z_root
 
-#%% Water fluxes 
+#%% Water fluxes
 # -----------------------------------------------------------------------------
 # EsPot (float): Potential surface evaporation current day
 # dap: day after planting
@@ -158,12 +159,12 @@ sc_df = pd.DataFrame.from_dict(sc,orient='index').T
 # sc_df.to_csv('EOMAJI_synthetic_log.csv',index=False)
 # sc_df = pd.read_csv('EOMAJI_synthetic_log.csv',index_col=False)
 
-#%% Quality 
+#%% Quality
 # quality_check = {}
 # quality_check['nb_of_irr_events'] = np.count_nonzero(model.weather_df.Precipitation.values)
 # quality_check['nb_of_rain_events'] = np.count_nonzero(wdf.Precipitation)
 #%% Paths
-prj_name = f'EOMAJI_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}_SMT_{args.SMT}_EOcons_{args.ApplyEOcons}' 
+prj_name = f'EOMAJI_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}_SMT_{args.SMT}_EOcons_{args.ApplyEOcons}'
 sc['figpath'] = figpath
 #%% Simulate with irrigation atmospheric boundary conditions
 # ----------------------------------------------------------
@@ -175,7 +176,7 @@ else:
     sc_withirr = sc
 
 simu_with_IRR, grid_xr_with_IRR = scenarii2pyCATHY.setup_cathy_simulation(
-                                                                         prj_name=prj_name, 
+                                                                         prj_name=prj_name,
                                                                          scenario=sc_withirr,
                                                                          with_irrigation=True,
                                                                     )
@@ -192,10 +193,10 @@ if args.run_process:
                             )
 # ee
 plt.close('all')
-#%% Simulate with NO irrigation 
+#%% Simulate with NO irrigation
 # -----------------------------
 simu_baseline, grid_xr_baseline = scenarii2pyCATHY.setup_cathy_simulation(
-                                                     prj_name=prj_name, 
+                                                     prj_name=prj_name,
                                                      scenario=sc,
                                                      with_irrigation=False,
                                                 )
@@ -216,8 +217,8 @@ plt.close('all')
 #%%
 
 time_sel = np.arange(0,len(grid_xr_with_IRR.time),10)
-grid_xr_with_IRR['irr_daily'].isel(time=time_sel).plot.imshow(x="x", y="y", 
-                                                              col="time", 
+grid_xr_with_IRR['irr_daily'].isel(time=time_sel).plot.imshow(x="x", y="y",
+                                                              col="time",
                                                               col_wrap=4
                                                               )
 # plt.title('ETp EO')
@@ -228,8 +229,8 @@ plt.savefig(os.path.join(figpath,'irr_daily_aquacrop.png'),
 # grid_xr_with_IRR['rain_daily'].sum()
 
 time_sel = np.arange(0,len(grid_xr_with_IRR.time),10)
-grid_xr_with_IRR['rain_daily'].isel(time=time_sel).plot.imshow(x="x", y="y", 
-                                                              col="time", 
+grid_xr_with_IRR['rain_daily'].isel(time=time_sel).plot.imshow(x="x", y="y",
+                                                              col="time",
                                                               col_wrap=4
                                                               )
 # plt.title('ETp EO')
@@ -241,5 +242,3 @@ grid_xr_with_IRR.attrs = {}
 grid_xr_with_IRR.to_netcdf(f'../prepro/grid_xr_EO_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
 grid_xr_baseline.attrs = {}
 grid_xr_baseline.to_netcdf(f'../prepro/grid_xr_baseline_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
-
-
