@@ -3,9 +3,19 @@
 
 ## Processing
 
+ - [ ] improve centum 
+   - make it works for AQUACROP inputs 
+   - make it works for Majadas inputs
+- [ ] agricultural plot delineation using https://github.com/fieldsoftheworld
+- [ ] Daily probability can be sum up to monthly values to improve estimates!
+
 ### Issues
 
 **TWIN simulations** 
+
+- [ ] Daily probability can be sum up to monthly values to improve estimates!
+- [ ] issue with AQUACROP --> why continue to irrigate while the plant is harvested??
+- [ ] why observation of ET are not constraining that much the state and the model parameters? almost no effects are visible!
 - [x] July calendar only works for matplolib 3.7: temporary solved using a specific branch with a fix: 
 	pip install git+https://github.com/thoellrich/july.git@fix-mpl.cbook.MatplotlibDepreciationWarning
 
@@ -88,6 +98,12 @@ For both it is necessary to write the soil file accordingly
         - WB + EB + DA for water accounting in all field sites
 
 ## Meeting notes
+
+**October**
+- 1st irrigation accounting plot/results --> overestimated as for now
+- 1st tentative of DA during rainfed season --> this should demonstrate how much improvement in events detections
+- build a package called centum: https://github.com/BenjMy/centum/tree/main
+- issue with AQUACROP --> why continue to irrigate while the plant is harvested??
 
 **July**
 - 5000*5000 domain pixels (standard)

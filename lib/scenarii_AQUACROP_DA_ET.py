@@ -7,15 +7,18 @@ import numpy as np
 
 def load_scenario(study='hetsoil',**kwargs):
     
-    if 'ET_scenarii' in study:
-        scenarii = ET_scenarii()
+    if 'ZROOT_scenarii' in study:
+        scenarii = ZROOT_scenarii()
+    elif 'Ks_scenarii' in study:
+        scenarii = Ks_scenarii()
+            
     return scenarii
         
 
 # ic
 # -------------------
-pert_nom_ic = -1.5
-pert_sigma_ic = 0.75
+pert_nom_ic = -25
+pert_sigma_ic = 4.75
 
 # ZROOT
 # -------------------
@@ -40,23 +43,28 @@ time_decorrelation_len = 40e3
 
 # Ks
 # -------------------
-pert_nom_ks = 1.880e-04
-pert_sigma_ks = 1.75
+pert_nom_ks = [1.880e-05]
+pert_sigma_ks = [2.75]
+
+# Porosity
+# -------------------
+pert_nom_porosity = [0.5]
+pert_sigma_porosity = [0.2]
 
 
-def ET_scenarii():
+def ZROOT_scenarii():
     scenarii = {
              'ZROOT_zones_withUpd': 
-                                                 {'per_type': [None],
-                                                  'per_name':['ZROOT'],
-                                                  'per_nom':[pert_nom_ZROOT*2],
-                                                  'per_mean':[pert_nom_ZROOT*2],    
-                                                  'per_sigma': [pert_sigma_ZROOT*2],
-                                                  'per_bounds': [{'min':minZROOT,'max':maxZROOT}
+                                                 {'per_type': [None,None],
+                                                  'per_name':['ic','ZROOT'],
+                                                  'per_nom':[pert_nom_ic,pert_nom_ZROOT*2],
+                                                  'per_mean':[pert_nom_ic,pert_nom_ZROOT*2],    
+                                                  'per_sigma': [pert_sigma_ic,pert_sigma_ZROOT*2],
+                                                  'per_bounds': [None,{'min':minZROOT,'max':maxZROOT}
                                                                  ],
-                                                  'sampling_type': ['normal'],
-                                                  'transf_type':[None],
-                                                  'listUpdateParm': ['St. var.', 'ZROOT'],
+                                                  'sampling_type': ['normal','normal'],
+                                                  'transf_type':[None,None],
+                                                  'listUpdateParm': ['St. var.', 'ZROOT0','ZROOT1'],
                                                   'listObAss': ['RS_ET'],
                                                   },                                  
                                                 
@@ -94,3 +102,62 @@ def ET_scenarii():
     return scenarii
         
 
+def Ks_scenarii():
+    scenarii = {
+             'Ks_zones_withUpd': 
+                                                 {'per_type': [None,None],
+                                                  'per_name':['ic','ks'],
+                                                  'pert_key_order': [None,['zone']],
+                                                  'per_nom':[pert_nom_ic,pert_nom_ks*2],
+                                                  'per_mean':[pert_nom_ic,pert_nom_ks*2],    
+                                                  'per_sigma': [pert_sigma_ic,pert_sigma_ks*2],
+                                                  'per_bounds': [None,None],
+                                                  'sampling_type': ['normal','lognormal'],
+                                                  'transf_type':[None,None],
+                                                  'listUpdateParm': ['St. var.', 'ks0','ks1'],
+                                                  'listObAss': ['RS_ET'],
+                                                  },   
+             'Ks_Poros_ZROOT_zones_withUpd': 
+                                                 {'per_type': [None]*4,
+                                                  'per_name':['ic','ks','porosity','ZROOT'],
+                                                  'pert_key_order': [None,
+                                                                     ['zone'],
+                                                                     ['zone'],
+                                                                     ['root_map']
+                                                                     ],
+                                                  'per_nom':[pert_nom_ic,
+                                                             pert_nom_ks*2,
+                                                             pert_nom_porosity*2,
+                                                             pert_nom_ZROOT*2
+                                                             ],
+                                                  'per_mean':[pert_nom_ic,
+                                                              pert_nom_ks*2,
+                                                              pert_nom_porosity*2,
+                                                              pert_nom_ZROOT*2
+                                                              ],    
+                                                  'per_sigma': [pert_sigma_ic,
+                                                                pert_sigma_ks*2,
+                                                                pert_sigma_porosity*2,
+                                                                pert_sigma_ZROOT*2
+                                                                ],
+                                                  'per_bounds': [None,
+                                                                 None,
+                                                                 None,
+                                                                 {'min':minZROOT,'max':maxZROOT}
+                                                                 ],
+                                                  'sampling_type': ['normal',
+                                                                    'lognormal',
+                                                                    'normal',
+                                                                    'normal'],
+                                                  'transf_type':[None]*4,
+                                                  'listUpdateParm': ['St. var.',
+                                                                     'ks0','ks1',
+                                                                     'porosity0','porosity1',
+                                                                     'ZROOT0','ZROOT1',                                                                   
+                                                                     ],
+                                                  'listObAss': ['RS_ET'],
+                                                  },   
+                                                            
+            }
+    return scenarii
+        

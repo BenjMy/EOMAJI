@@ -43,7 +43,7 @@ def get_cmd():
     process_param.add_argument('-scenario_nb', 
                                type=int, 
                                help='scenario_nb',
-                               default=0, # only 1 patch of irrigation
+                               default=7, # only 1 patch of irrigation
                                required=False
                                ) 
     process_param.add_argument('-weather_scenario', 
@@ -62,7 +62,7 @@ def get_cmd():
     process_param.add_argument('-ApplyEOcons', 
                                type=int, 
                                help='Applying EO cons',
-                               default=1, # only 1 patch of irrigation
+                               default=None, # only 1 patch of irrigation
                                required=False
                                )   
     args = parse.parse_args()
@@ -83,12 +83,12 @@ grid_xr_with_IRR = xr.open_dataset(f'../prepro/grid_xr_EO_AquaCrop_sc{args.scena
 grid_xr_baseline = xr.open_dataset(f'../prepro/grid_xr_baseline_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
 
 
-simu_with_IRR = CATHY(dirName='../WB_twinModels/', 
+simu_with_IRR = CATHY(dirName='../WB_twinModels/AQUACROP/', 
                      prj_name=prj_name + '_withIRR'
                      )
 out_with_IRR = utils.read_outputs(simu_with_IRR)
 
-simu_baseline = CATHY(dirName='../WB_twinModels/', 
+simu_baseline = CATHY(dirName='../WB_twinModels/AQUACROP/', 
                      prj_name=prj_name
                      )
 out_baseline = utils.read_outputs(simu_baseline)
@@ -96,7 +96,7 @@ out_baseline = utils.read_outputs(simu_baseline)
 #%%
 # run_process = True # don't rerun the hydro model
 # scenario_nb = 3
-sc = load_scenario(args.scenario_nb)
+sc, _ = load_scenario(args.scenario_nb)
 sc_EO = utils.check_and_tune_E0_dict(sc)
 
 #%% Paths
@@ -121,6 +121,43 @@ sc['figpath'] = figpath
 #                                             )
 
 # plt.close('all')
+#%%
+
+import os
+import matplotlib.pyplot as plt
+
+# start_date = sc['datetime'][0]
+date_string = '2022-01-01 08:00:00.00000'
+start_date = pd.to_datetime(date_string)
+
+meanxy_irr_solution = grid_xr_with_IRR['irr_daily'].mean(['x', 'y'])
+time_in_datetime = start_date + meanxy_irr_solution.time.data
+fig, ax = plt.subplots()
+
+ax.bar(time_in_datetime, 
+       meanxy_irr_solution * (1e3 * 86400),  # Convert units to mm/day
+       label='Daily Irrigation'
+       )
+
+# Add labels to the axes
+ax.set_xlabel('Time')
+ax.set_ylabel('Irrigation (mm/day)')
+
+# Create a second y-axis to plot the cumulative sum
+ax2 = ax.twinx()
+
+# Plot the cumulative sum (cumsum) on the second y-axis
+cumsum_irr = (meanxy_irr_solution * (1e3 * 86400)).cumsum()
+ax2.plot(time_in_datetime, cumsum_irr, color='red', label='Cumulative Irrigation')
+
+# Set the label for the cumulative sum axis
+ax2.set_ylabel('Cumulative Irrigation (mm)')
+
+# Save the figure
+fig.savefig(os.path.join(figpath, 'plot_1d_net_irrArea.png'), dpi=300)
+
+plt.show()
+
 #%% Simulate with NO irrigation 
 # -----------------------------
 
@@ -301,14 +338,15 @@ ds_analysis_EO_ruled = utils.apply_EO_rules(ds_analysis_EO,
 
 
 #%% irrigation_delineation
-threshold_local=0.55
-threshold_regional=0.25
+threshold_local=0.25
+threshold_regional=0.10
 
+# s
 decision_ds, event_type = utils.irrigation_delineation(ds_analysis_EO_ruled,
-                                                       threshold_local=0.55,
-                                                       threshold_regional=0.25,
+                                                       threshold_local=threshold_local,
+                                                       threshold_regional=threshold_regional,
+                                                       time_window=5,
                                                        ) 
-
 
 event_type_node_IN = event_type.where(mask_IN, drop=True).mean(['x','y'])
 event_type_node_OUT = event_type.where(mask_OUT, drop=True).mean(['x','y'])
@@ -322,11 +360,140 @@ event_type_node_OUT = event_type.where(mask_OUT, drop=True).mean(['x','y'])
 #                          )
 # utils.plot_irrigation_schedule(event_type,time_steps,fig,axes)
 # plt.savefig(os.path.join(figpath, 'classify_events.png'))
+dates_dt = [pd.to_datetime(date).to_pydatetime() for date in ds_analysis_EO_ruled.datetime.values]
+
+mask_irr_solution = (grid_xr_with_IRR['irr_daily'].where(mask_IN, drop=True).mean(['x','y']) > 0).values
+mask_rain_solution = (grid_xr_with_IRR['rain_daily'].where(mask_OUT, drop=True).mean(['x','y']) > 1e-8).values
+
+
+non_zero_count = mask_rain_solution.sum()
+
+mask_irr_detection = (event_type_node_IN == 1).values
+common_mask = mask_irr_solution & mask_irr_detection
+nbIrr_detection =  np.sum(common_mask)
+nbIrr_solution = np.sum(mask_irr_solution)
+perc_detection = (nbIrr_detection/nbIrr_solution)*100
+
+
+decision_ds_ruled_node_IN = decision_ds.where(mask_IN, drop=True).mean(['x','y'])
+decision_ds_ruled_node_OUT = decision_ds.where(mask_OUT, drop=True).mean(['x','y'])
+decision_ds_ruled_node_IN = decision_ds_ruled_node_IN.assign_coords(datetime=sc['datetime'])
+decision_ds_ruled_node_OUT = decision_ds_ruled_node_OUT.assign_coords(datetime=sc['datetime'])
+
+dates = sc['datetime']
+mean_irr_daily = grid_xr_with_IRR['irr_daily'].where(mask_IN, drop=True).mean(['x', 'y']).values
+mean_rain_daily = grid_xr_with_IRR['rain_daily'].mean(['x','y'])
+
+# # Create a list of colors based on the common_mask
+colors = ['green' if is_common else 'red' for is_common in common_mask]
+
+
+#%%
+
+
+def plot_local_regional_time_serie(axs, ax2):
+    
+    axs[1].plot(decision_ds_ruled_node_IN.datetime,
+        decision_ds_ruled_node_IN.ratio_ETap_local_time_avg,
+          color='k', 
+          linestyle='-',
+          marker='.'
+        )
+    ax2.plot(decision_ds_ruled_node_IN.datetime,
+            decision_ds_ruled_node_IN.ratio_ETap_regional_spatial_avg_time_avg,
+              color='grey', 
+              linestyle='-',
+              marker='.'
+            )
+    
+    
+    ax2.scatter(decision_ds_ruled_node_IN.datetime[(decision_ds_ruled_node_IN.condRain>0).values],
+            decision_ds_ruled_node_IN.ratio_ETap_local_time_avg[(decision_ds_ruled_node_IN.condRain>0).values],
+              color='orange', 
+              marker='v',
+              s=100
+            )
+    
+    ax2.scatter(decision_ds_ruled_node_IN.datetime[mask_rain_solution],
+            decision_ds_ruled_node_IN.ratio_ETap_local_time_avg[mask_rain_solution],
+              color='red', 
+              marker='*'
+            )
+    
+    ax2.scatter(decision_ds_ruled_node_IN.datetime[(decision_ds_ruled_node_IN.condIrrigation>0).values],
+            decision_ds_ruled_node_IN.ratio_ETap_local_time_avg[(decision_ds_ruled_node_IN.condIrrigation>0).values],
+              color='lightgreen', 
+              marker='v',
+              s=100,
+              label='Irr. Detected'
+            )
+    ax2.scatter(decision_ds_ruled_node_IN.datetime[mask_irr_solution],
+                decision_ds_ruled_node_IN.ratio_ETap_local_time_avg[mask_irr_solution],
+                color='darkgreen', 
+                marker='*',
+                label='Irr. TRUE'
+            )
+    
+#%%
+# Plot the bar chart
+fig, axs = plt.subplots(2,1,
+                        figsize=(15,5),
+                        sharex=True
+                        )
+
+utils.plot_atmbc_rain_irr_events(axs[0],
+                                dates,
+                                mean_irr_daily,
+                                mean_rain_daily, 
+                                perc_detection,
+                                colors,
+                                )
+
+
+ax2 = axs[1].twinx()
+
+plot_local_regional_time_serie(axs, ax2)
+
+                                                    
+# Adding horizontal lines for the thresholds
+ax2.axhline(y=threshold_local, color='green', linestyle='--', label='threshold_local')
+ax2.axhline(y=threshold_regional, color='red', linestyle='--', label='threshold_regional')
+
+# Set labels for each y-axis
+axs[1].set_ylabel('Local ETap \n Ratio Difference', color='green')
+ax2.set_ylabel('Regional ETap \n Ratio Difference', color='red')
+
+# Add legends for both plots
+axs[1].legend(loc='upper left')
+# ax2.legend(loc='upper right')
+ax2.legend(loc='upper left', bbox_to_anchor=(1.15, 0.5), borderaxespad=0.)
+
+# Annotation to explain the event of water input due to rainfall
+fig.text(0.72, 0.5, 
+         '''
+             Rainfall=  \n d(regional ETa/p) > threshold \n d(regional ETa/p)>= d(local Eta/p)  \n  \n 
+             Irr=  \n d(local ETa/p) > threshold \n d(local ETa/p)>> d(regional ETa/p)  \n  \n 
+         ''',
+         # ha='left', va='center', 
+         fontsize=10, color='k'
+         )
+# Adjust plot to ensure the annotation is visible
+plt.subplots_adjust(right=0.65)  # Make space for the annotation
+
+
+# ax3.set_ylabel('ratio_ETap_local_diff', color='black')
+# ax3.set_ylim([0,10])
+# decision_ds_ruled_node_IN.variables
+fig.savefig(os.path.join(figpath,
+                          'irrigation_detection.png'
+                          ),
+            dpi=300,
+            )
+
 
 
 #%%
 import july
-dates_dt = [pd.to_datetime(date).to_pydatetime() for date in ds_analysis_EO_ruled.datetime.values]
 fig, axs = plt.subplots(2,1,sharex=True,figsize=(12,9))
 
 im = july.heatmap(dates_dt, 
@@ -358,186 +525,141 @@ fig.savefig(os.path.join(figpath,
             dpi=300,
             )
 
-#%% Check detection quality
-
-mask_irr_solution = (grid_xr_with_IRR['irr_daily'].where(mask_IN, drop=True).mean(['x','y']) > 0).values
-mask_irr_detection = (event_type_node_IN == 1).values
-common_mask = mask_irr_solution & mask_irr_detection
-nbIrr_detection =  np.sum(common_mask)
-nbIrr_solution = np.sum(mask_irr_solution)
-perc_detection = (nbIrr_detection/nbIrr_solution)*100
-
-dates = sc['datetime']
-mean_irr_daily = grid_xr_with_IRR['irr_daily'].where(mask_IN, drop=True).mean(['x', 'y']).values
-mean_rain_daily = grid_xr_with_IRR['rain_daily'].mean(['x','y'])
-
-# Create a list of colors based on the common_mask
-colors = ['green' if is_common else 'red' for is_common in common_mask]
-
-# Plot the bar chart
-fig, ax = plt.subplots(figsize=(12,5))
-ax.bar(dates, 
-       mean_irr_daily*(1e3*86400), 
-       color=colors)
-
-
-ax.set_ylim([0,100])
-
-# Create a second y-axis for rainfall
-ax2 = ax.twinx()
-ax2.bar(dates, mean_rain_daily*(1e3*86400), color='blue', alpha=0.5)
-ax2.set_ylim([0,100])
-ax2.invert_yaxis()
-
-# Format the x-axis with datetime labels
-ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically set major ticks
-ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))  # Set date format
-
-# Rotate the x-axis labels for better readability
-plt.xticks(rotation=45)
-
-plt.xlabel('Date')
-ax.set_ylabel('Irrigation Daily Mean (mm/day)')
-ax2.set_ylabel('Rain Daily Mean (mm/day)',color='blue')
-plt.title(f'%of detected irr events={perc_detection}%')
-
-
-# Add legend for red and blue bars
-red_patch = mpatches.Patch(color='green', label='Detected')
-blue_patch = mpatches.Patch(color='red', label='Not Detected')
-ax.legend(handles=[red_patch, blue_patch], loc='lower left', bbox_to_anchor=(1,1))
-
-# Optional: Auto-adjust layout to prevent overlap
-plt.tight_layout()
-
-fig.savefig(os.path.join(figpath,
-                          'Irrigation_detection.png'
-                          ),
-            dpi=300,
-            )
-
 #%%
 plt.close('all')
 
-decision_ds_ruled_node_IN = decision_ds.where(mask_IN, drop=True).mean(['x','y'])
-decision_ds_ruled_node_OUT = decision_ds.where(mask_OUT, drop=True).mean(['x','y'])
-decision_ds_ruled_node_IN = decision_ds_ruled_node_IN.assign_coords(datetime=sc['datetime'])
-decision_ds_ruled_node_OUT = decision_ds_ruled_node_OUT.assign_coords(datetime=sc['datetime'])
+# # Detected irrigation events are further split into low, medium and high probability based on another set
+# # of thresholds. Since irrigation is normally applied on a larger area, the raster map with per-pixel
+# # irrigation events is cleaned up by removing isolated pixels in which irrigation was detected.
+
+# def set_probability_levels():
+#     print('to implement')
+#     pass
 
 
-def plot_atmbc_rain_irr_events(ax):
-    
-    # Plot the bar chart
-    ax.bar(dates, 
-           mean_irr_daily*(1e3*86400), 
-           color=colors)
-   
-    ax.set_ylim([0,100])
-    
-    # Create a second y-axis for rainfall
-    ax2 = ax.twinx()
-    # ax2.spines['right'].set_position(('axes', 1.0))  # Shift ax3 to the right by 0.05 from the default position
-    ax2.bar(dates, mean_rain_daily*(1e3*86400), color='blue', alpha=0.5)
-    ax2.set_ylim([0,100])
-    ax2.invert_yaxis()
-    
-    # Format the x-axis with datetime labels
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically set major ticks
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))  # Set date format
-    
-    # Rotate the x-axis labels for better readability
-    plt.xticks(rotation=45)
-    
-    plt.xlabel('Date')
-    ax.set_ylabel('Irrigation Daily Mean (mm/day)')
-    ax2.set_ylabel('Rain Daily Mean (mm/day)',color='blue')
-    plt.title(f'%of detected irr events={perc_detection}%')
-    
-    return ax2
+# IRRIGATION QUANTIFICATION
+#%% Quantify volume applied
+# -------------------------
+ds_analysis_baseline = ds_analysis_baseline.assign_coords(time=ds_analysis_EO['time'])
+netIrr = abs(ds_analysis_EO['ACT. ETRA']) - abs(ds_analysis_baseline['ACT. ETRA'])
+netIrr = netIrr.rename('netIrr (m/s)')
+netIrr_cumsum = netIrr.cumsum('time')
+netIrr_cumsum = netIrr_cumsum.rename('netIrr cumsum (m/s)')
+# netIrr.plot.imshow(x="x", y="y", col="time", col_wrap=4)
+plt.savefig(os.path.join(figpath,'netIrr_spatial_plot.png'))
 
+#%% Plot histogram of daily net irrigation/rain versus real
+plt.close('all')
+maxDEM = simu_with_IRR.grid3d['mesh3d_nodes'][:,2].max()
+nb_irr_areas = 1
+# ETp = np.ones(np.shape(simu_with_IRR.DEM))*sc['ETp']
 
-# # Plot the bar chart
-# fig, ax = plt.subplots(figsize=(12,5))
-# ax2 = plot_atmbc_rain_irr_events(ax)
-# ax3 = ax2.twinx()
-# ax3.spines['right'].set_position(('axes', 1.05))  # Shift ax3 to the right by 0.05 from the default position
-# ax3.plot(decision_ds_ruled_node_IN.datetime,
-#         decision_ds_ruled_node_IN.ratio_ETap_local,
-#          color='black', 
-#          label='ETap Local Ratio',  # Customize color/label if needed,
-#          linestyle='--'
-#         )
-# ax3.set_ylabel('Ratio ETap Local', color='black')
-# ax3.set_ylim([0,10])
-
-
-# Plot the bar chart
-fig, ax = plt.subplots(figsize=(12,5))
-ax2 = plot_atmbc_rain_irr_events(ax)
-
-
-#%%
-# Plot the bar chart
-fig, axs = plt.subplots(2,1,
-                        figsize=(12,5),
-                        sharex=True
+ETp = grid_xr_baseline['ETp_daily'].mean(dim=['x','y'])
+# ETp = ds_analysis_EO["ETp"].mean(dim=['x','y'])
+fig, axs = plt.subplots(3,nb_irr_areas+1,
+                        sharex=True,
+                        sharey=False,
+                        figsize=(16,6)
                         )
-plot_atmbc_rain_irr_events(axs[0])
+utils.plot_accounting_summary_analysis(
+                                        axs,
+                                         irr_patch_centers,
+                                         patch_centers_CATHY,
+                                         netIrr,
+                                         simu_with_IRR,
+                                         maxDEM,
+                                         out_with_IRR,
+                                         out_baseline,
+                                         ETp,
+                                         grid_xr_with_IRR,
+                                    )
+fig.savefig(os.path.join(figpath,
+                         'plot_accounting_summary_analysis.png'
+                         ),
+            dpi=300,
+            )
+#%%
 
-ax2 = axs[1].twinx()
-axs[1].plot(decision_ds_ruled_node_IN.datetime,
-        decision_ds_ruled_node_IN.ratio_ETap_local_diff,
-          color='green', 
-          linestyle='-',
-          marker='.'
-        )
-ax2.plot(decision_ds_ruled_node_IN.datetime,
-        decision_ds_ruled_node_IN.ratio_ETap_regional_diff,
-          color='red', 
-          linestyle='-',
-          marker='.'
-        )
-
-# Adding horizontal lines for the thresholds
-ax2.axhline(y=threshold_local, color='green', linestyle='--', label='threshold_local')
-ax2.axhline(y=threshold_regional, color='red', linestyle='--', label='threshold_regional')
-
-# Set labels for each y-axis
-axs[1].set_ylabel('Local ETap \n Ratio Difference', color='green')
-ax2.set_ylabel('Regional ETap \n Ratio Difference', color='red')
-
-# Add legends for both plots
-axs[1].legend(loc='upper left')
-ax2.legend(loc='upper right')
-
-# Annotation to explain the event of water input due to rainfall
-fig.text(0.72, 0.5, 
-         '''
-             Rainfall=  \n d(regional ETa/p) > threshold \n d(regional ETa/p)>= d(local Eta/p)  \n  \n 
-             Irr=  \n d(local ETa/p) > threshold \n d(local ETa/p)>> d(regional ETa/p)  \n  \n 
-         ''',
-         # ha='left', va='center', 
-         fontsize=10, color='k'
-         )
-# Adjust plot to ensure the annotation is visible
-plt.subplots_adjust(right=0.65)  # Make space for the annotation
+def irrigation_accounting(ds_analysis_EO,
+                          ds_analysis_baseline
+                          ):
+    netIrr = abs(ds_analysis_EO['ACT. ETRA']) - abs(ds_analysis_baseline['ACT. ETRA'])
+    netIrr_cumsum = netIrr.cumsum('time')
+    netIrr_cumsum = netIrr_cumsum.rename('netIrr cumsum (m/s)')
 
 
-# ax3.set_ylabel('ratio_ETap_local_diff', color='black')
-# ax3.set_ylim([0,10])
-# decision_ds_ruled_node_IN.variables
 
 
 #%%
 
-# Detected irrigation events are further split into low, medium and high probability based on another set
-# of thresholds. Since irrigation is normally applied on a larger area, the raster map with per-pixel
-# irrigation events is cleaned up by removing isolated pixels in which irrigation was detected.
+mask_irr_solution
 
-def set_probability_levels():
-    print('to implement')
-    pass
-    
+
+meanxy_netIrr_estimated = netIrr.mean(dim=['x','y'])
+
+max_cum_sum_Year = grid_xr_with_IRR['irr_daily'].cumsum('time').sum(dim=['x','y']).max()
+total_net_Year = netIrr_cumsum.sum(dim=['x','y']).max()
+
+time_net_datetime = start_date + netIrr.time.data
+
+
+# fig, axs = plt.subplots(2,1,
+#                         figsize=(15,5),
+#                         sharex=True
+#                         )
+# ax2 = axs[1].twinx()
+# plot_local_regional_time_serie(axs, axs[0])
+fig, ax = plt.subplots(figsize=(12,4))
+
+
+ax.bar(time_in_datetime, 
+       meanxy_irr_solution * (1e3 * 86400),  # Convert units to mm/day
+       label='Daily Irrigation',
+       color='lightblue'
+       )
+ax.bar(time_net_datetime, 
+       meanxy_netIrr_estimated * (1e3 * 86400),  # Convert units to mm/day
+       label='Estimated Irrigation',
+       color='orange'
+       )
+# Add labels to the axes
+ax.set_xlabel('Time')
+ax.set_ylabel('Irrigation (mm/day)')
+
+# Create a second y-axis to plot the cumulative sum
+ax2 = ax.twinx()
+
+# Plot the cumulative sum (cumsum) on the second y-axis
+cumsum_irr_solution = (meanxy_irr_solution * (1e3 * 86400)).cumsum()
+cumsum_irr_estimated = (meanxy_netIrr_estimated * (1e3 * 86400)).cumsum()
+ax2.plot(time_in_datetime, cumsum_irr, color='darkblue', 
+         label='Cumulative Irrigation')
+ax2.plot(time_net_datetime, cumsum_irr_estimated, color='red',
+         label='Cumulative Irrigation')
+
+# Set the label for the cumulative sum axis
+ax2.set_ylabel('Cumulative Irrigation (mm)')
+
+# Save the figure
+fig.savefig(os.path.join(figpath, 'plot_1d_net_irrArea.png'), dpi=300)
+
+plt.show()
+
+
+
+#%% Plot runoff
+plt.close('all')
+# simu_with_IRR.show(prop="hgraph")
+# simu_with_IRR.show(prop="cumflowvol")
+
+fig, ax = plt.subplots()
+simu_with_IRR.show(prop="cumflowvol",ax=ax)
+simu_baseline.show(prop="cumflowvol",ax=ax,
+                   color='red')
+
+
+
+
 #%%
 # args.scenario_nb=0
 # args.weather_scenario=0

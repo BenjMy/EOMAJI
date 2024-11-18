@@ -26,14 +26,25 @@ keywords: DA
 This work focus on introducing heterogeneities into the soil and vegetation structure, which will be addressed using a data assimilation (DA) approach to calibrate the model. 
 This calibration will help characterize soil/plant properties.
 
-
-```{figure} july_rain_irr_DA_soil_tocome.png
+```{figure} ../figures/scenario_AquaCrop_sc0_weather_reference/root_map.png
 :class: bg-primary
 :width: 600px
-:alt: july_rain_irr_DA_soil_tocome
+:alt: root_map
 
-july_rain_irr_DA_soil_tocome
+root_map
 ```
 
+
+:::{error}
+:class: myclass1 myclass2
+:name: Warming
+- **Root depths** are rarely known so perturbated
+:::
+
+:::{note}
+:class: myclass1 myclass2
+:name: Note
+- We consider errors on observations ETa (evaluated using pyTSEB) to 1mm/day.
+:::
 
 

@@ -66,10 +66,10 @@ def get_cmd():
     return(args)    
 
 rootPath = Path(os.getcwd())
-dataPath = Path(rootPath / '../data/Spain/Spain_ETp_Copernicus_CDS/')
+dataPath = rootPath / '../data/Spain/Spain_ETp_Copernicus_CDS/'
 
 args = get_cmd() 
-figpath = Path(rootPath /f'../figures/scenario_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}')
+figpath = rootPath /f'../figures/scenario_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}'
 figpath.mkdir(parents=True, exist_ok=True)
 #%%
 # run_process = True # don't rerun the hydro model
@@ -82,7 +82,10 @@ analysis_xr = utils.prep_ERA5_reanalysis_data_SPAIN(dataPath)
 
 #%% # Create scenarios
 # Scenario 1: +20% precipitation
-wdf, scenario_analysis = utils.create_scenario_ERA5(analysis_xr,args)
+wdf, scenario_analysis = utils.create_scenario_ERA5(analysis_xr,
+                                                    args,
+                                                    dataPath
+                                                    )
 
 fig, axs = plt.subplots(3,1,sharex=True)
 utils.plot_weather_ET_timeserie(analysis_xr,
@@ -175,6 +178,7 @@ else:
     sc_withirr = sc
 
 simu_with_IRR, grid_xr_with_IRR = scenarii2pyCATHY.setup_cathy_simulation(
+                                                                         root_path = rootPath,
                                                                          prj_name=prj_name, 
                                                                          scenario=sc_withirr,
                                                                          with_irrigation=True,
@@ -195,6 +199,7 @@ plt.close('all')
 #%% Simulate with NO irrigation 
 # -----------------------------
 simu_baseline, grid_xr_baseline = scenarii2pyCATHY.setup_cathy_simulation(
+                                                     root_path = rootPath,
                                                      prj_name=prj_name, 
                                                      scenario=sc,
                                                      with_irrigation=False,
@@ -238,8 +243,8 @@ plt.savefig(os.path.join(figpath,'rain_daily_aquacrop.png'),
             )
 
 grid_xr_with_IRR.attrs = {}
-grid_xr_with_IRR.to_netcdf(f'../prepro/grid_xr_EO_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
+grid_xr_with_IRR.to_netcdf(rootPath / f'../prepro/grid_xr_EO_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
 grid_xr_baseline.attrs = {}
-grid_xr_baseline.to_netcdf(f'../prepro/grid_xr_baseline_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
+grid_xr_baseline.to_netcdf(rootPath / f'../prepro/grid_xr_baseline_AquaCrop_sc{args.scenario_nb}_weather_{args.weather_scenario}.netcdf')
 
 

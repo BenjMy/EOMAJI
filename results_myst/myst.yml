@@ -14,7 +14,7 @@ project:
     - file: 1_results_SC0.md
     - file: 1_results_SC1.md
     - file: 1_synthetic_delineation_AQUACROP.md
-    - file: 99Z_synthetic_DA.md
+    - file: 1_synthetic_delineation_AQUACROP_withDA.md
     - file: 99Z_Majadas_hydro.md
 site:
   template: book-theme

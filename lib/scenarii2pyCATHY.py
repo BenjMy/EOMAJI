@@ -115,7 +115,7 @@ def prepare_scenario(scenario,with_irrigation=True):
     '''
     # define grid size and resolution
     # -------------------------------------------------------------------------
-    region_domain = set_regional_domain()
+    region_domain = set_regional_domain(scenario)
     dem = set_dem(region_domain)
     local_domain = set_local_domain()
     layers = set_layers()
@@ -235,11 +235,13 @@ def prepare_scenario(scenario,with_irrigation=True):
     return grid_xr, layers 
 
 
-def set_regional_domain():
+def set_regional_domain(scenario):
     x_dim = 1 * 1e3  # length in m
     y_dim = 1 * 1e3  # length in m
-    x_spacing = 10  # x discretisation in m
-    y_spacing = 10
+    
+    if 'EO_resolution' in scenario:
+        x_spacing = scenario['EO_resolution'] # x discretisation in m
+        y_spacing = scenario['EO_resolution']
     region_domain = {
         'x_dim': x_dim,
         'y_dim': y_dim,
@@ -397,6 +399,7 @@ def pad_zone_2mesh(zones):
 #%%
 
 def setup_cathy_simulation(
+                            root_path,
                             prj_name, 
                             scenario,
                             with_irrigation=False,
@@ -424,9 +427,11 @@ def setup_cathy_simulation(
     
     #%% Create a simulation object
     # -------------------------------------------------------------------------
-    simu = CATHY(dirName='../WB_twinModels/AQUACROP/', 
+    simu = CATHY(dirName= root_path / '../WB_twinModels/AQUACROP/', 
                  prj_name=prj_name
                  )
+    
+    # if 'resolution'
 
     simu.update_prepo_inputs(
         DEM=grid_xr['DEM'].values,
@@ -450,7 +455,13 @@ def setup_cathy_simulation(
         padded_netatmbc_all.append(padded_netatmbc)
     netValue= [np.hstack(net2d) for net2d in padded_netatmbc_all]
  
-    # np.max(netValue)
+    # np.shape(padded_netatmbc)
+    # np.shape(grid_xr['net_atmbc'].isel(time=0).values)
+    # np.shape(simu.DEM)
+    padded_netatmbc, _ = pad_raster_2mesh(grid_xr['net_atmbc'].isel(time=0).values)
+
+    np.shape(grid_xr['net_atmbc'].isel(time=0).values)
+    np.shape(grid_xr['net_atmbc'].isel(time=0).values)
     
     simu.update_atmbc(
                       HSPATM=0, # spatially variable atmbc

@@ -13,6 +13,8 @@ def load_scenario(idnb):
         sc = load_s5()
     elif idnb==6:
         sc = load_s0_microwawes()
+    elif idnb==7:
+        sc, scenario_EO = load_s0_lowRes()
     return sc, scenario_EO 
 
 
@@ -50,10 +52,9 @@ ETp_window_size_x = 10 # size of the window in pixels to compute the rolling mea
 # SOIL PARAMETERS
 # ---------------
 PMIN = -1e30
-pressure_head_ini = -200
+pressure_head_ini = -50
 POROSITY = 0.60
 PERMX = 1e-5
-
 
 threshold_localETap = 0.3
 threshold_regionalETap = 0.3
@@ -120,6 +121,13 @@ def load_s0():
                 }
     
     return scenario, scenario_EO
+
+def load_s0_lowRes():
+    scenario, scenario_EO = load_s0()
+    scenario['EO_resolution'] = 100
+    return scenario, scenario_EO
+
+    
         
 def load_s1():
     # Same than s0 with a rain event all over the regional domain before irrigation

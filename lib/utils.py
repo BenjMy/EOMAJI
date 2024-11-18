@@ -33,6 +33,7 @@ from pyCATHY.cathy_utils import change_x2date
 import matplotlib.dates as mdates
 
 from aquacrop import AquaCropModel, Soil, Crop, InitialWaterContent, IrrigationManagement
+from scipy.ndimage import uniform_filter
 
 
 def extract_filedate(file_path):
@@ -60,65 +61,125 @@ def add_ETp2ds(ETp,ds_analysis):
     ds_analysis["ETp"] = (("time", "x", "y"), [padded_ETp]*len(ds_analysis.time))
     return ds_analysis
 
+
+def apply_time_window_mean(ds_analysis,time_window=10,p=''):
+    # Calculate the absolute time difference between consecutive time steps
+    time_diff = np.diff(ds_analysis['time'].values)  # In units of numpy timedelta64
     
-def compute_ratio_ETap_local(ds_analysis,
-                             ETa_name='ACT. ETRA',
-                             ETp_name='ETp',
-                             ):
-    ds_analysis["ratio_ETap_local"] = ds_analysis[ETa_name]/ds_analysis[ETp_name]
+    # Convert time differences to days (assuming time is datetime64[ns])
+    time_diff_days = time_diff / np.timedelta64(1, 'D')
+
+    # Mask: Create a boolean array to flag where the time difference is <= 1 day
+    time_mask = np.concatenate([[True], time_diff_days <= 1.1])  # Keep the first value True
     
-    #
-    # calculating the change in **ETa/p** between the time on which irrigation
-    # is to be detect and most recent previous time on which ET estimates are available.
-    #
+    # Apply the time window rolling mean only when the time difference is <= 1 day
+    # ds_analysis["ratio_ETap_local_time_avg"] = (
+    #     ds_analysis["ratio_ETap_local_diff"]
+    #     .where(time_mask, drop=False)  # Only consider valid time steps
+    #     .rolling(time=time_window, center=True)
+    #     .mean()
+    # )
+    
+    ds_analysis[p + "_time_avg"] = (
+                                    ds_analysis[p]
+                                    .where(time_mask[:, np.newaxis, np.newaxis], drop=False)  # Only apply to valid time steps
+                                    .rolling(time=time_window, center=True)
+                                    .mean()
+                                    )
+    
+    # ds_analysis["ratio_ETap_local"].time.where(time_mask, drop=False)
+                                                    
+    return ds_analysis
+    
+def compute_ratio_ETap_local(ds_analysis, 
+                              ETa_name='ACT. ETRA', 
+                              ETp_name='ETp', 
+                              time_window=None
+                              ):
+        
+    # Apply the time difference condition and calculate the absolute difference in 'ratio_ETap_local'
+    ds_analysis["ratio_ETap_local"] = ds_analysis[f'{ETa_name}']/ds_analysis[f'{ETp_name}']
     ds_analysis["ratio_ETap_local_diff"] = abs(ds_analysis["ratio_ETap_local"].diff(dim='time'))
-    
+    ds_analysis = apply_time_window_mean(ds_analysis, p='ratio_ETap_local',time_window=time_window)
+        
     return ds_analysis
 
-def compute_regional_ETap(ds_analysis,
-                          ETa_name='ACT. ETRA',
-                          ETp_name='ETp',
-                          window_size_x=10
-                          ):
-    # (i.e. as an average change in all agricultural pixels within 10 km window)
-    # Compute the mean on X and Y dimensions for the ETp variable
+
+
+def compute_regional_ETap(ds_analysis, 
+                          ETa_name='ACT. ETRA', 
+                          ETp_name='ETp', 
+                          window_size_x=10,  # in km
+                          stat='mean',
+                        ):
+    # Calculate grid resolution in km (assuming UTM or similar CRS with meters)
+    x_step_km = ds_analysis.rio.resolution()[0] * 1e-3  # Grid resolution in km
+    window_steps = int(window_size_x / x_step_km)  # Convert window size to number of grid steps
+    
+    # Choose the appropriate function for the statistic
+    if stat == 'mean':
+        aggregation_func = uniform_filter  # This applies a mean filter (moving window average)
+    
+    results = {}
     for pp in [ETa_name, ETp_name]:
-        mean = ds_analysis[pp].mean()
-        mean_dataarray = xr.full_like(ds_analysis[pp], 
-                                      fill_value=mean
-                                      )
-        ds_analysis[pp+'_mean'] = mean_dataarray
-    return ds_analysis
+        data = ds_analysis[pp]
+
+        # Initialize a list to store the results for each time slice
+        time_aggregated = []
+
+        # Loop over time steps
+        for t in range(data.sizes['time']):
+            # Extract the time slice (2D data: y, x)
+            data_slice = data.isel(time=t)
+            
+            # Apply the moving window mean using uniform_filter
+            mean_data = aggregation_func(data_slice, 
+                                         size=(window_steps, window_steps), 
+                                         mode='reflect')
+
+            # Create a DataArray for the current time slice to keep metadata
+            mean_dataarray = xr.DataArray(mean_data, 
+                                          coords=data_slice.coords, 
+                                          dims=data_slice.dims)
+            
+            # Append the result to the list
+            time_aggregated.append(mean_dataarray)
+        
+        # Concatenate along the time dimension to recreate the full dataset
+        results[pp] = xr.concat(time_aggregated, dim='time')
+    
+    return results
+
 
 def compute_ratio_ETap_regional(ds_analysis,
                                 ETa_name='ACT. ETRA',
                                 ETp_name='ETp',
-                                stat = 'mean'
+                                stat = 'mean',
+                                window_size_x=10, # in km,
+                                time_window=None
                                 ):
-    ds_analysis["ratio_ETap_regional"] = ds_analysis[f'{ETa_name}']/ds_analysis[f'{ETp_name}']
     #
     # calculating the change in **ETa/p** between the time on which irrigation
     # is to be detect and most recent previous time on which ET estimates are available.
     #
     if stat == 'mean':
-        # ds_analysis = compute_regional_ETap(ds_analysis,ETa_name,ETp_name)
-        # ds_analysis = compute_regional_ETap(ds_analysis,ETa_name,ETp_name)
-        mean = ds_analysis["ratio_ETap_regional"].mean(dim=['x','y'])
-        mean_dataarray = xr.full_like(ds_analysis['ratio_ETap_regional'], 
-                                  fill_value=0
-                                  )
-        for i, m in enumerate(mean.values):
-            timei = mean_dataarray.time[i]
-            mean_dataarray.loc[{'time': timei}] = m
-            
-        ds_analysis["ratio_ETap_regional_mean"] = mean_dataarray
-        ds_analysis["ratio_ETap_regional_diff"] = abs(ds_analysis["ratio_ETap_regional_mean"].diff(dim='time'))
-    
+        reg_analysis = compute_regional_ETap(
+                                            ds_analysis,
+                                            stat = 'mean',
+                                            window_size_x=10 # in km
+                                            )
+        ds_analysis["ratio_ETap_regional_spatial_avg"] = reg_analysis[f'{ETa_name}']/reg_analysis[f'{ETp_name}']
+        ds_analysis["ratio_ETap_regional_diff"] = abs(ds_analysis["ratio_ETap_regional_spatial_avg"].diff(dim='time'))
+        ds_analysis = apply_time_window_mean(ds_analysis,p='ratio_ETap_regional_spatial_avg',
+                                             time_window=time_window)
+                
+
     return ds_analysis
 
 
 def compute_bool_threshold_decision_local(ds_analysis,
-                                          threshold_local=-0.25
+                                          threshold_local=0.25,
+                                          checkp='ratio_ETap_local_time_avg'
                                           ):
         # Initialize 'threshold_local' with False values
     ds_analysis["threshold_local"] = xr.DataArray(False, 
@@ -126,21 +187,21 @@ def compute_bool_threshold_decision_local(ds_analysis,
                                                   dims=ds_analysis.dims
                                                      )
     # Set 'threshold_local' to True where condition is met
-    checkon = ds_analysis["ratio_ETap_local_diff"]
-    ds_analysis["threshold_local"] = xr.where(checkon <= threshold_local, True, False)
-
+    checkon = ds_analysis[checkp]
+    ds_analysis["threshold_local"] = xr.where(checkon > threshold_local, True, False)
     return ds_analysis
 
 def compute_bool_threshold_decision_regional(ds_analysis,
-                                             threshold_regional=-0.25
+                                             threshold_regional=0.25,
+                                             checkp='ratio_ETap_regional_spatial_avg_time_avg'
                                              ):
     
     ds_analysis["threshold_regional"] = xr.DataArray(False, 
                                                   coords=ds_analysis.coords, 
                                                   dims=ds_analysis.dims
                                                      )
-    checkon = ds_analysis["ratio_ETap_regional_diff"]
-    ds_analysis["threshold_regional"] = xr.where(checkon <= threshold_regional, True, False)
+    checkon = ds_analysis[checkp]
+    ds_analysis["threshold_regional"] = xr.where(checkon > threshold_regional, True, False)
     return ds_analysis
 
 
@@ -307,7 +368,64 @@ def seconds_to_days(seconds):
 #     ETa1d_baseline = out_baseline['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
     
 #     return ETa1d_index, ETa1d_with_IRR, ETa1d_baseline
+
+def plot_ETa1d(
+                out_with_IRR,
+                out_baseline,
+                node_index,
+                ETp,
+                dates,
+                timeIrr_sec,
+                axs,
+               ):
+    ETa1d_index = np.where(out_with_IRR['ETa']['SURFACE NODE']==node_index[0])[0]
+    ETa1d_with_IRR = out_with_IRR['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
+    ETa1d_baseline = out_baseline['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
+    axs[0].set_xlabel('')
+    axs[1].set_xlabel('')
+
+    if dates is None:
+        x = out_baseline['ETa'].time_sec.unique()[1:]/86400
+    else:
+        x = dates
+        
+    indexplot = (3)
+    axs[indexplot].plot(x ,
+                        ETa1d_with_IRR,
+                        label='Irr',
+                        color='blue',
+                        marker='*'
+                        )
+    axs[indexplot].plot(x ,
+                        ETa1d_baseline,
+                        label='baseline',
+                        color='red',
+                        marker='*'
+                        )
     
+    if type(ETp) != float:
+        axs[indexplot].plot(x,
+                            abs(ETp), 
+                            color='k', 
+                            linestyle='--', 
+                            label='ETp'
+                            )
+    else:
+        axs[indexplot].axhline(y=abs(ETp), 
+                                color='k', 
+                                linestyle='--', 
+                                label='ETp')
+    axs[indexplot].legend()
+    axs[indexplot].set_xlabel('time')
+    axs[indexplot].set_ylabel('ETa (m/s)')
+
+    if timeIrr_sec is not None:
+        axs[indexplot].axvline(x=timeIrr_sec/86400, 
+                               color='r', 
+                               linestyle='--', 
+                               label='Start Irr.')
+        
+            
 def plot_1d_evol(simu,
                  node_index,
                  out_with_IRR,
@@ -362,52 +480,16 @@ def plot_1d_evol(simu,
                             prop='psi',
                             dates=df_atmbc_dates
                             )
-    ETa1d_index = np.where(out_with_IRR['ETa']['SURFACE NODE']==node_index[0])[0]
-    ETa1d_with_IRR = out_with_IRR['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
-    ETa1d_baseline = out_baseline['ETa']['ACT. ETRA'].iloc[ETa1d_index[1:]]
-    axs[0].set_xlabel('')
-    axs[1].set_xlabel('')
-
-    if dates is None:
-        x = out_baseline['ETa'].time_sec.unique()[1:]/86400
-    else:
-        x = dates
-        
-    indexplot = (3)
-    axs[indexplot].plot(x ,
-                        ETa1d_with_IRR,
-                        label='Irr',
-                        color='blue',
-                        marker='*'
-                        )
-    axs[indexplot].plot(x ,
-                        ETa1d_baseline,
-                        label='baseline',
-                        color='red',
-                        marker='*'
-                        )
+    plot_ETa1d(
+                out_with_IRR,
+                out_baseline,
+                node_index,
+                ETp,
+                dates,
+                timeIrr_sec,
+                axs,
+                )
     
-    if type(ETp) != float:
-        axs[indexplot].plot(x,
-                            abs(ETp), 
-                            color='k', 
-                            linestyle='--', 
-                            label='ETp'
-                            )
-    else:
-        axs[indexplot].axhline(y=abs(ETp), 
-                                color='k', 
-                                linestyle='--', 
-                                label='ETp')
-    axs[indexplot].legend()
-    axs[indexplot].set_xlabel('time')
-    axs[indexplot].set_ylabel('ETa (m/s)')
-
-    if timeIrr_sec is not None:
-        axs[indexplot].axvline(x=timeIrr_sec/86400, 
-                               color='r', 
-                               linestyle='--', 
-                               label='Start Irr.')
     
     
  
@@ -859,9 +941,10 @@ def get_irr_time_trigger(grid_xr,irr_patch_center):
 def irrigation_delineation(decision_ds,
                            threshold_local=0.25,
                            threshold_regional=0.25,
+                           time_window=10,
                            ):
-    decision_ds = compute_ratio_ETap_local(decision_ds)
-    decision_ds = utils.compute_ratio_ETap_regional(decision_ds)
+    decision_ds = utils.compute_ratio_ETap_local(decision_ds,time_window=time_window)
+    decision_ds = utils.compute_ratio_ETap_regional(decision_ds,time_window=time_window)
 
     # Create a boolean that check changes in ratioETap "ratio_ETap_local_diff"
     # -------------------------------------------------------------------------
@@ -885,6 +968,7 @@ def irrigation_delineation(decision_ds,
 
     # Drop time 0 as the analysis is conducted on values differences (ti - t0)
     # -------------------------------------------------------------------------
+    # time_mask = decision_ds['time'] > np.timedelta64(time_window, 'D')
     time_mask = decision_ds['time'] > np.timedelta64(0, 'D')
     decision_ds = decision_ds.where(time_mask, drop=True)
 
@@ -916,9 +1000,8 @@ def apply_rules_rain(decision_ds,
      
 
     decision_ds['condRain1'] = decision_ds['threshold_regional']==1
-    decision_ds['condRain2'] = abs(decision_ds['ratio_ETap_regional_diff']) >= abs(decision_ds['ratio_ETap_local_diff'])
+    decision_ds['condRain2'] = abs(decision_ds['ratio_ETap_regional_spatial_avg_time_avg']) >= abs(decision_ds['ratio_ETap_local_time_avg'])
     decision_ds['condRain'] = decision_ds['condRain1'] & decision_ds['condRain2']
-
     # event_type = xr.where(decision_ds['condRain'] == True, 2, 0)
 
     
@@ -948,7 +1031,9 @@ def apply_rules_irrigation(decision_ds,
     # threshold and significantly larger than increase in regional ETa/p)
     
     decision_ds['condIrrigation1'] = decision_ds['threshold_local']==1
-    decision_ds['condIrrigation2'] = abs(decision_ds['ratio_ETap_local_diff']) > abs(1.5*decision_ds['ratio_ETap_regional_diff'])
+    a = abs(decision_ds['ratio_ETap_local_time_avg'])
+    b = abs(1.5*decision_ds['ratio_ETap_regional_spatial_avg_time_avg'])
+    decision_ds['condIrrigation2'] = a > b
     decision_ds['condIrrigation'] = decision_ds['condIrrigation1'] & decision_ds['condIrrigation2']
     
 
@@ -1085,11 +1170,19 @@ def plot_accounting_summary_analysis(axs,
                             marker='*'
                             )
         
-        axs[0,i].axhline(y=abs(ETp.values), 
-                            color='k', 
-                            linestyle='--', 
-                            label='ETp'
+        if len(ETp.values)>1:
+            axs[0,i].scatter(x=out_baseline['ETa'].time_sec.unique()[1:]/86400, 
+                             y=ETp.values, 
+                             color='k', 
+                             linestyle='--', 
+                             label='ETp'
                             )
+        else:
+            axs[0,i].axhline(y=abs(ETp.values), 
+                                color='k', 
+                                linestyle='--', 
+                                label='ETp'
+                                )
     
         # Creating a second y-axis
         ax2 = axs[0, i].twinx()
@@ -1514,7 +1607,7 @@ def prep_ERA5_reanalysis_data_SPAIN(dataPath):
     analysis_xr.attrs['description'] = 'Daily aggregated statistics from the cropped ERA5 dataset'
     return analysis_xr
 
-def create_scenario_ERA5(analysis_xr,args):
+def create_scenario_ERA5(analysis_xr,args,dataPath):
     scenario_analysis = analysis_xr.copy()
     if args.weather_scenario == 'plus20p_tp':
         scenario_analysis = analysis_xr.copy()
@@ -1529,9 +1622,10 @@ def create_scenario_ERA5(analysis_xr,args):
         scenario_analysis['maxt2m'] = scenario_analysis['maxt2m'] * 1.25
         scenario_analysis['mint2m'] = scenario_analysis['mint2m'] * 1.25
     
-    dataPath = Path('../data/Spain/Spain_ETp_Copernicus_CDS/')
+    # dataPath = Path('../data/Spain/Spain_ETp_Copernicus_CDS/')
     # Save the scenario datasets to new NetCDF files
-    analysis_xr.to_netcdf(dataPath/'era5_scenario_ref.nc')
+    # analysis_xr.to_netcdf(dataPath/'era5_scenario_ref.nc')
+    # scenario_analysis.to_netcdf(f'{dataPath}/era5_scenario{args.scenario_nb}_weather_{args.weather_scenario}.nc')
     scenario_analysis.to_netcdf(f'{dataPath}/era5_scenario{args.scenario_nb}_weather_{args.weather_scenario}.nc')
     # scenario_analysis
     
@@ -1611,3 +1705,39 @@ def plot_weather_ET_timeserie(analysis_xr,
     axs[1].set_xlabel('')
     
     
+
+def plot_atmbc_rain_irr_events(ax,
+                               dates,
+                               mean_irr_daily,
+                               mean_rain_daily, 
+                               perc_detection = None,
+                               colors='blue',
+                               ):
+    
+    # Plot the bar chart
+    ax.bar(dates, 
+           mean_irr_daily*(1e3*86400), 
+           color=colors)
+   
+    ax.set_ylim([0,100])
+    
+    # Create a second y-axis for rainfall
+    ax2 = ax.twinx()
+    # ax2.spines['right'].set_position(('axes', 1.0))  # Shift ax3 to the right by 0.05 from the default position
+    ax2.bar(dates, mean_rain_daily*(1e3*86400), color='blue', alpha=0.5)
+    ax2.set_ylim([0,100])
+    ax2.invert_yaxis()
+    
+    # Format the x-axis with datetime labels
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically set major ticks
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))  # Set date format
+    
+    # Rotate the x-axis labels for better readability
+    plt.xticks(rotation=45)
+    
+    plt.xlabel('Date')
+    ax.set_ylabel('Irrigation Daily Mean \n (mm/day)')
+    ax2.set_ylabel('Rain Daily Mean \n (mm/day)',color='blue')
+    plt.title(f'%of detected irr events={perc_detection}%')
+    
+    return ax2
