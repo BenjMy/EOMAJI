@@ -22,10 +22,16 @@ import os
 import argparse
 from shapely.geometry import mapping
 from scipy import stats
+from pyCATHY import cathy_utils
 
 cwd = os.getcwd()
-prj_name = 'Majadas_daily_WTD2' # Majadas_daily_WTD1 Majadas_2024_WTD1 
-# prj_name = 'Majadas_2024_WTD1'
+# prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_1_SCF_1.0_OMEGA_1'
+prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_1_SCF_1.0_OMEGA_1'
+prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_1.0_short_1_SCF_1.0_OMEGA_1'
+prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1'
+prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_0_SCF_1.0_OMEGA_1'
+
+
 figPath = Path(cwd) / '../figures/' / prj_name
 figPath.mkdir(parents=True, exist_ok=True)
 
@@ -39,13 +45,15 @@ hydro_Majadas = CATHY(
 
 #%% Import input data 
 
-ds_analysis_EO = utils.read_prepo_EO_datasets(fieldsite='Majadas')
 
 file_pattern = '*TPday*.tif'
 ET_0_filelist = list(prepoEOPath.glob(file_pattern))
 crs_ET = rxr.open_rasterio(ET_0_filelist[0]).rio.crs
 ET_test = rxr.open_rasterio(ET_0_filelist[0])
 
+ds_analysis_EO = utils.read_prepo_EO_datasets(fieldsite='Majadas',
+                                              crs=crs_ET
+                                              )
 
 #%% Get areas and point of interest 
 
@@ -54,8 +62,9 @@ majadas_aoi = gpd.read_file('../data/AOI/majadas_aoi.geojson')
 majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
 
 is_point = gdf_AOI_POI_Majadas.geometry.geom_type == 'Point'
-
 DEM, hd_DEM = hydro_Majadas.read_inputs('dem')
+df_atmbc = hydro_Majadas.read_inputs('atmbc')
+df_atmbc.groupby('time').mean()
 
 #%%
 gdf_AOI_POI_Majadas['meshNode'] = None
@@ -73,9 +82,9 @@ df_sw, _ = hydro_Majadas.read_outputs('sw')
 df_psi = hydro_Majadas.read_outputs('psi')
 
 #%%
-from pyCATHY import cathy_utils
+start_date = ds_analysis_EO.time.isel(time=0).values
 dates = cathy_utils.change_x2date(df_sw.index.values, 
-                                   ds_analysis_EO.time.isel(time=0).values,
+                                  ds_analysis_EO.time.isel(time=0).values,
                                   # start_date = '2023-01-01',
                                   formatIn = '%Y-%m-%d',
                                   formatOut="%Y-%m-%d"
@@ -108,7 +117,8 @@ for geom, indexPOI in zip(gdf_AOI_POI_Majadas[is_point].geometry,gdf_AOI_POI_Maj
     
 x, y =  gdf_AOI_POI_Majadas.iloc[4].geometry.coords[0]
 # depths = [5,50,100,200]
-depths = [5,100,400]
+# depths = [5,100,400]
+depths = [5,100]
 
 hydro_Majadas.grid3d
 
@@ -119,6 +129,7 @@ meshNodes2plot = []
 for d in depths:
     meshNodePOI, closest = hydro_Majadas.find_nearest_node([x,y, np.max(DEM)-d/100])
     meshNodes2plot.append(meshNodePOI)
+    
 #%%
 rain = ds_analysis_EO['RAIN'].mean(dim=['x','y'])
 
@@ -216,18 +227,18 @@ plt.savefig(figPath/'saturation_simu_Majadas.png',
 
 #%% Plot time lapse saturation
 
-try:
-    cplt.show_vtk_TL(
-                    unit="saturation",
-                    notebook=False,
-                    path= str(Path(hydro_Majadas.workdir) / hydro_Majadas.project_name / "vtk"),
-                    show=False,
-                    x_units='days',
-                    # clim = [0.55,0.70],
-                    savefig=True,
-                )
-except:
-    pass
+# try:
+#     cplt.show_vtk_TL(
+#                     unit="saturation",
+#                     notebook=False,
+#                     path= str(Path(hydro_Majadas.workdir) / hydro_Majadas.project_name / "vtk"),
+#                     show=False,
+#                     x_units='days',
+#                     # clim = [0.55,0.70],
+#                     savefig=True,
+#                 )
+# except:
+#     pass
 
 # TDR_SWC.columns
 # # SMC_XY = [list(pi) for pi in POIs_coords]
@@ -270,13 +281,52 @@ df_fort777 = out_CT.read_fort777(os.path.join(hydro_Majadas.workdir,
                                               hydro_Majadas.project_name,
                                               'fort.777'),
                                  )
+df_fort777.time.unique()
+
 df_fort777_select_t_xr = df_fort777.set_index(['time','y','x']).to_xarray()
 # df_fort777_select_t_xr = df_fort777_select_t_xr.rename({'Y': 'y','X':'x'})
 
 # df_fort777_select_t_xr = df_fort777_select_t_xr.rio.set_spatial_dims('y','x', inplace=True)
 
+#%%
+from matplotlib.colors import ListedColormap, BoundaryNorm
+
+# Load your GeoDataFrame
+gdf = gdf_AOI_POI_Majadas  # Assuming it's already loaded
+
+# Encode the 'POI/AOI' column with unique integers
+gdf['category_code'] = gdf['POI/AOI'].astype('category').cat.codes
+
+# Create a colormap with distinct colors
+categories = gdf['POI/AOI'].unique()
+n_categories = len(categories)
+cmap = ListedColormap(plt.cm.get_cmap("tab10").colors[:n_categories])
+
+# Define normalization to map category codes to colors
+norm = BoundaryNorm(range(n_categories + 1), cmap.N)
+
+# Plot
+fig, ax = plt.subplots(figsize=(10, 8))
+gdf.plot(column='category_code', cmap=cmap, linewidth=0.5, edgecolor='k', ax=ax)
+
+# Add a discrete colorbar
+cbar = plt.colorbar(
+    plt.cm.ScalarMappable(cmap=cmap, norm=norm),
+    ax=ax,
+    boundaries=range(n_categories + 1),
+    ticks=range(n_categories),
+)
+cbar.ax.set_yticklabels(categories)
+cbar.set_label('POI/AOI Categories')
+
+# Title and axis adjustments
+ax.set_title('Categorical Map of POI/AOI')
+ax.axis('off')
+
+plt.show()
+
 #%% Clip ET xarray to geometry of land cover 
-       
+gdf_AOI_POI_Majadas.plot()
         
 LCnames = ['irrigated','agroforestry']
 fig, axs = plt.subplots(1,len(LCnames),
@@ -386,9 +436,7 @@ for axi, lcn in zip(axs,LCnames):
     x = ETa_AOIi_mean.values * 1000 * 86400
     y = ETa_AOIi_mean_TSEB_interp.values
 
-    axi.scatter(x,
-               y,
-               )
+    axi.scatter(x,y)
 
     # Perform linear regression using scipy.stats.linregress
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
@@ -420,10 +468,12 @@ fig, axs = plt.subplots(2,1,sharex=True)
 for axi, lcn in zip(axs,LCnames):
    
     ETa_AOIi = df_fort777_select_t_xr[lcn + '_CLCmask']
-    ETa_AOIi_datetimes = ds_analysis_EO.time.isel(time=0).values + ETa_AOIi.time.values
+    # ETa_AOIi_datetimes = ds_analysis_EO.time.isel(time=0).values + ETa_AOIi.time.values
+    # ETa_AOIi_datetimes = ds_analysis_EO.time.values #.isel(time=0).values + ETa_AOIi.time.values
+    ETa_AOIi_datetimes = ds_analysis_EO.time.values #.isel(time=0).values + ETa_AOIi.time.values
  
     ETa_AOIi_mean = ETa_AOIi.mean(dim=['x','y'])
-    ETa_AOIi_mean = ETa_AOIi_mean.assign_coords(datetime=('time', ETa_AOIi_datetimes))
+    ETa_AOIi_mean['datetime'] = start_date + ETa_AOIi_mean.time
  
     
     ETa_AOIi_TSEB = ds_analysis_EO[lcn + '_CLCmask']
@@ -437,7 +487,7 @@ for axi, lcn in zip(axs,LCnames):
             label='TSEB'
             )
     
-    axi.plot(ETa_AOIi_datetimes,
+    axi.plot(ETa_AOIi_mean['datetime'],
             ETa_AOIi_mean.values*1000*86400,
             linestyle='-.',
             label='CATHY'
@@ -467,9 +517,9 @@ fig.savefig(f'{figPath}/{lcn}_MASK_mean_ETa_hydro_ETa_Energy_{prj_name}.png',
 
 #%% spatialET_Majadas animated
 
-fig, ax = plt.subplots(figsize=(12,6))
-ani, writer = ani, writer = utils.spatial_ET_animated(hydro_Majadas,fig,ax)
-ani.save(figPath/'spatialET_Majadas.gif', writer=writer)
+# fig, ax = plt.subplots(figsize=(12,6))
+# ani, writer = ani, writer = utils.spatial_ET_animated(hydro_Majadas,fig,ax)
+# ani.save(figPath/'spatialET_Majadas.gif', writer=writer)
 
 
 #%% Compare ETa from TSEB with ETa from pyCATHY

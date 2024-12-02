@@ -117,7 +117,7 @@ def get_SWC_pos(path='../data/Spain/Majadas/TDR/Majadas_coord_SWC_sensors_Benjam
 
 # Read SMC field sensors
 # ----------------------
-def get_SWC_data(path='../data/TDR/LMA_Meteo_2022-2023_Benjamin.csv'):
+def get_SWC_data(path='../data/Spain/Majadas/TDR/LMA_Meteo_2022-2023_Benjamin.csv'):   
     TDR = pd.read_csv(path)
     TDR.set_index('rDate',inplace=True)
     TDR.index = pd.to_datetime(TDR.index, format='%d/%m/%Y %H:%M')
@@ -209,7 +209,7 @@ def xarraytoDEM_pad(data_array):
                              mode='edge', 
                              # constant_values=np.nan
                              )
-    
+   
     # Create a new xarray.DataArray with the padded data
     padded_data_array = xr.DataArray(
         padded_array_np,
@@ -222,3 +222,25 @@ def xarraytoDEM_pad(data_array):
         attrs=data_array.attrs  # Preserve metadata
     )
     return padded_data_array
+
+
+def get_Majadas_root_map_from_CLC(xrx_grid_target,
+                                  xrx_CLC_to_map,
+                                  crs_target):
+    
+    xrx_CLC_to_map = xrx_CLC_to_map.rio.write_crs(crs_target)
+    xrx_grid_target = xrx_grid_target.rio.write_crs(crs_target)
+    reprojected_CLC_Majadas = xrx_CLC_to_map.rio.reproject_match(xrx_grid_target,
+                                                                )
+    CLC_values_unique = np.unique(xrx_CLC_to_map.Code_CLC.values)
+    code18_str_rootmap_indice = [ (cci,i+1) for i, cci in enumerate(CLC_values_unique[:-1])]
+    replacement_dict = dict(code18_str_rootmap_indice)
+    replacement_dict[np.nan] = 0
+    mapped_data = np.zeros(np.shape(reprojected_CLC_Majadas.Code_CLC))
+    i = 1
+    for key, value in replacement_dict.items():
+        mapped_data[reprojected_CLC_Majadas.Code_CLC.values == key] = i
+        if np.sum(reprojected_CLC_Majadas.Code_CLC.values == key) > 1:
+            i += 1 
+    
+    return reprojected_CLC_Majadas, mapped_data

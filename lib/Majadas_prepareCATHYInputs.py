@@ -22,7 +22,12 @@ import Majadas_utils
 import utils
 
 #%% Define path and crs projection 
-AOI = 'Buffer_5000' #H2_Bassin
+# AOI = 'Buffer_5000' #H2_Bassin
+AOI = 'Buffer_100'
+# AOI = 'H2_Bassin'
+reprocess = False
+shapefile_raster_resolution = 300
+
 # rootDataPath = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/MAJADAS/')
 prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
 rootDataPath = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/MAJADAS/')
@@ -34,25 +39,11 @@ crs_ET_0 = Majadas_utils.get_crs_ET()
 #%% Read AOI points and plots
 # -----------------------------------------------------------------------------
 # majadas_aoi = Majadas_utils.get_Majadas_aoi()
-majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=5000)
-# buffered_aoi = majadas_aoi.geometry.buffer(5000)  # Adjust the buffer distance as needed
-# larger_aoi_gdf = gpd.GeoDataFrame({'name': ['Majadas de Tietar Larger AOI'], 
-#                                    'geometry': buffered_aoi}
-#                                   )
-
-# larger_aoi_gdf.to
-
-# # Save the larger AOI to a shapefile
-# output_path = 'larger_aoi.shp'
-# larger_aoi_gdf.to_file(output_path)
-
+majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=100)
+# majadas_aoi = gpd.read_file('../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
+# majadas_aoi.to_crs(crs_ET_0, inplace=True)
 majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
 
-
-majadas_aoi = gpd.read_file('../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
-majadas_aoi.to_crs(crs_ET_0, inplace=True)
-
-# a
 #%% Define files outputs from TSEB for Majadas
 # -----------------------------------------------------------------------------
 # file_pattern = '*ET_0*.tif'
@@ -68,7 +59,6 @@ ET_test = rxr.open_rasterio(ET_0_filelist[0])
 #%% Read and CLIP ! Majadas grids: S3/Meteo = E030N006T6 and S2/Landast = X0033_Y0044
 # S3/Meteo EPGS CRS EPSG:27704 - WGS 84 / Equi7 Europe - Projected
 # ss
-reprocess = False
 if reprocess:
     #% CLIP to Majadas bassin
     # -------------------------------------------------------------------------
@@ -83,17 +73,12 @@ if reprocess:
     # S3/Meteo EPGS CRS EPSG:27704 - WGS 84 / Equi7 Europe - Projected
     utils.export_tif2netcdf(fieldsite='Majadas')
     
-    
-    ETa_ds = xr.open_dataset('../prepro/Majadas/ETa_Majadas.netcdf')
+    ETa_ds = xr.open_dataset('../prepro/Majadas/{AOI}/ETa_Majadas.netcdf')
     ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
-    ETp_ds = xr.open_dataset('../prepro/Majadas/ETp_Majadas.netcdf')
+    ETp_ds = xr.open_dataset('../prepro/Majadas/{AOI}/ETp_Majadas.netcdf')
     ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
-    RAIN_ds = xr.open_dataset('../prepro/Majadas/RAIN_Majadas.netcdf')
+    RAIN_ds = xr.open_dataset('../prepro/Majadas/{AOI}/RAIN_Majadas.netcdf')
     RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
-    
-    # read_prepo_EO_datasets
-    
-
 else:   
     ETa_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETa_Majadas.netcdf')
     ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
@@ -126,13 +111,11 @@ coord_SWC_CT, gdf_SWC_CT = Majadas_utils.get_SWC_pos(
 # majadas_aoi = gpd.read_file('../data/AOI/POI_Majadas.kmz')
 #%% Corinne land cover shapefile to raster 
 # -----------------------------------------------------------------------------
-
 clc_codes = utils.get_CLC_code_def()
 CLC_Majadas = Majadas_utils.get_LandCoverMap()
 CLC_clipped = gpd.clip(CLC_Majadas, 
                         majadas_aoi
                         )
-
 
 # clc_codes_int = [int(clci) for clci in clc_codes.keys()]
 categorical_enums = {'Code_18': clc_codes}
@@ -143,7 +126,7 @@ CLC_Majadas_clipped_grid = make_geocube(
     vector_data=CLC_clipped,
     output_crs=crs_ET,
     # group_by='Land_Cover_Name',
-    resolution=(-300, 300),
+    resolution=(-shapefile_raster_resolution, shapefile_raster_resolution),
     categorical_enums= categorical_enums,
     # fill=np.nan
 )
@@ -157,8 +140,6 @@ CLC_Majadas_clipped_grid = CLC_Majadas_clipped_grid.rio.write_crs(crs_ET)
 nodata_value = CLC_Majadas_clipped_grid.Code_18.rio.nodata
 
 # CLC_Majadas_clipped_grid['Code_18']= CLC_Majadas_clipped_grid.Code_18.where(CLC_Majadas_clipped_grid.Code_18 != nodata_value, -9999)
-
-# ss
 # Step 1: Replace 'nodata' with NaN
 CLC_Majadas_clipped_grid['Code_CLC']= CLC_Majadas_clipped_grid.Code_CLC.where(
     CLC_Majadas_clipped_grid.Code_CLC != 'nodata', other=np.nan
@@ -167,11 +148,9 @@ CLC_Majadas_clipped_grid['Code_CLC']= CLC_Majadas_clipped_grid.Code_CLC.where(
 # Step 2: Convert the remaining string values to integers
 CLC_Majadas_clipped_grid['Code_CLC'] = CLC_Majadas_clipped_grid.Code_CLC.astype(float)
 
-
 # export to netcdf
 # -----------------------------------------
 CLC_Majadas_clipped_grid.to_netcdf(f'../prepro/Majadas/{AOI}/CLCover_Majadas.netcdf')
-
 
 # plot
 # -----------------------------------------
@@ -200,7 +179,7 @@ cmap = mcolors.ListedColormap(plt.cm.get_cmap('tab20').colors[:len(unique_labels
 norm = mcolors.BoundaryNorm(boundaries=range(len(unique_labels) + 1), ncolors=len(unique_labels))
 
 # Plot using imshow with the defined colormap
-fig, axs = plt.subplots(2,2,
+fig, axs = plt.subplots(1,3,
                         sharex=True,
                         sharey=True
                         )
@@ -212,7 +191,9 @@ CLC_Majadas_clipped_grid.Code_18.plot(cmap='Paired',
                                       vmin=0,
                                       ax=axs[1]
                                       )
-
+axs[1].set_title('')
+axs[1].set_xlabel('')
+axs[1].set_ylabel('')
 
 majadas_aoi.boundary.plot(ax=axs[0],color='r')
 majadas_POIs.plot(ax=axs[0],color='r')
@@ -223,29 +204,33 @@ legend_labels = {i: category_mapping[i] for i in range(len(categories))}
 legend_patches = [plt.Line2D([0], [0], marker='o', color='w', label=legend_labels[i],
                              markerfacecolor=cmap(i), markersize=10) for i in range(len(categories))]
 # Show the plot
-majadas_aoi.boundary.plot(ax=axs[2],color='r')
+majadas_aoi.boundary.plot(ax=axs[1],color='r')
 try:
-    ETp_ds.isel(band=0)['ETp'].isel(time=0).plot.imshow(ax=axs[3])
+    ETp_ds.isel(band=0)['ETp'].isel(time=0).plot.imshow(ax=axs[2])
 except:
     pass
-majadas_aoi.boundary.plot(ax=axs[3],color='r')
+majadas_aoi.boundary.plot(ax=axs[2],color='r')
+axs[2].set_title('')
+axs[2].set_xlabel('')
+axs[2].set_ylabel('')
 
 # cx.add_basemap(ax=axs[1],
 #                source=cx.providers.Esri.WorldImagery
 #                )
-fig.savefig(figPath/'LandCoverRaster_Majadas.png',dpi=300)
+fig.savefig(figPath/f'LandCoverRaster_Majadas_{AOI}.png',dpi=300)
 
 #%% Read Majadas DTM
-# clipped_DTM_rxr = rxr.open_rasterio('../data/Spain/DTM_Global/clipped_DTM_Majadas_AOI.tif', 
-#                                     )
-clipped_DTM_rxr = rxr.open_rasterio('../data/Spain/DTM_Global/clipped_DTM_Majadas_AOI.tif', 
+# import os
+# os.getcwd()
+clipped_DTM_rxr = rxr.open_rasterio(f'../data/Spain/clipped_DTM_Majadas_AOI_{AOI}.tif', 
                                     )
 #%% plot majadas DTM 
 fig, ax = plt.subplots()
-clipped_DTM_rxr.isel(band=0).plot.imshow(vmin=0,ax=ax)
-majadas_POIs.plot(ax=ax)
+clipped_DTM_rxr.isel(band=0).plot.imshow(ax=ax)
+majadas_POIs.plot(ax=ax,color='red')
 majadas_aoi.plot(ax=ax,edgecolor='black', facecolor='none')
-fig.savefig(figPath/'DTM_Majadas.png', dpi=300)
+ax.set_title(f'DTM_Majadas_{AOI}')
+fig.savefig(figPath/f'DTM_Majadas_{AOI}.png', dpi=300)
 
 #%%
 
@@ -253,12 +238,14 @@ ETp = ETp_ds.to_dataarray().isel(variable=0,band=0).sortby('time')
 RAIN = RAIN_ds.to_dataarray().isel(variable=0,band=0).sortby('time')
 print('Errrrrorrr in rain evaluation in the input!')
 RAIN = RAIN.where((RAIN <= 300) & (RAIN > 0), other=0)
+
+
 ds_analysis_EO = ETa_ds.isel(band=0)
 ds_analysis_EO['ETp'] = ETp
 ds_analysis_EO['RAIN'] = RAIN
 CLC_Majadas_clipped_grid_no_spatial_ref = CLC_Majadas_clipped_grid.drop_vars('spatial_ref', errors='ignore')
 ds_analysis_EO['CLC'] = CLC_Majadas_clipped_grid_no_spatial_ref.Code_18
-ds_analysis_EO.to_netcdf('../prepro/ds_analysis_EO.netcdf')
+ds_analysis_EO.to_netcdf(f'../prepro/ds_analysis_EO_{AOI}.netcdf')
 ds_analysis_EO = ds_analysis_EO.sortby('time')
 
 nulltimeETa = np.where(ds_analysis_EO.ETa.isel(x=0,y=0).isnull())[0]

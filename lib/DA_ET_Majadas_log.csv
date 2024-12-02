@@ -1,0 +1,15 @@
+,study,sc,AOI,short,nens,DAtype,DA_OBS_loc,DA_loc_domain,dataErr,GapCoverage,rainSeasonDA,refModel,datetime
+0,ZROOT,0,Buffer_100,0,24,enkf_Evensen2009,0,veg_map,1e+99,,0,prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_1_SCF_1.0_OMEGA_1,2024-11-26 17:13:00.805660
+1,ZROOT,0,Buffer_100,0,24,enkf_Evensen2009,0,veg_map,1e+99,,1,prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_1_SCF_1.0_OMEGA_1,2024-11-26 17:13:05.578552
+2,ZROOT,0,Buffer_100,0,24,enkf_Evensen2009,0,veg_map,1e-12,,0,prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_1_SCF_1.0_OMEGA_1,2024-11-26 17:13:15.336402
+3,ZROOT,0,Buffer_100,0,24,enkf_Evensen2009,0,veg_map,1e-12,,1,prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_1_SCF_1.0_OMEGA_1,2024-11-26 17:13:23.528604
+4,ZROOT,0,Buffer_100,1,4,enkf_Evensen2009,0,veg_map,1e-12,,0,MajadasBuffer_5000,2024-11-28 10:00:35.935752
+5,ZROOT,0,Buffer_100,0,4,enkf_Evensen2009,0,veg_map,1e-12,,0,MajadasBuffer_5000,2024-11-28 10:08:35.560918
+6,ZROOT,0,Buffer_100,0,4,enkf_Evensen2009,0,veg_map,1e-12,,0,prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_1_SCF_1.0_OMEGA_1,2024-11-28 10:22:07.103953
+7,ZROOT,0,Buffer_100,0,4,enkf_Evensen2009,0,veg_map,1e-12,,0,prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_0_SCF_1.0_OMEGA_1,2024-11-28 10:34:45.927775
+8,ZROOT,0,Buffer_100,0,24,enkf_Evensen2009,0,veg_map,1e+99,,0,prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1,2024-11-28 11:06:34.465207
+9,ZROOT,0,Buffer_100,0,24,enkf_Evensen2009,0,veg_map,1e-13,,0,prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1,2024-11-28 11:34:34.568180
+10,ZROOT,0,Buffer_100,0,32,enkf_Evensen2009,0,veg_map,1e-11,,0,prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1,2024-11-28 16:41:23.824064
+11,ZROOT,1,Buffer_100,0,32,enkf_Evensen2009,0,veg_map,1e+99,,0,prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1,2024-11-30 08:31:01.769581
+12,ZROOT,1,Buffer_100,0,4,enkf_Evensen2009,0,veg_map,1e-12,,0,prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_0_SCF_1.0_OMEGA_1,2024-11-30 08:58:35.571490
+13,ZROOT,1,Buffer_100,0,32,enkf_Evensen2009,0,veg_map,1e-13,,0,prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1,2024-11-29 19:31:41.904312

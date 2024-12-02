@@ -747,10 +747,6 @@ def read_prepo_EO_datasets(fieldsite='Majadas',
     CLC_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/CLCover_{fieldsite}.netcdf')
 
     ds_analysis_EO = ETa_ds.drop_vars('spatial_ref', errors='ignore').isel(band=0)
-    # contains_nan = ds_analysis_EO.ETa.isnull().any()
-    # nan_count = ds_analysis_EO.ETa.isnull().sum().item()
-    # nan_count = ds_analysis_EO.RAIN.isnull().sum().item()
-
     ds_analysis_EO['ETp'] = ETp_ds.to_dataarray().isel(band=0).sel(variable='ETp')
     ds_analysis_EO['RAIN'] = RAIN_ds.to_dataarray().isel(band=0).sel(variable='RAIN')
 

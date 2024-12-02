@@ -44,5 +44,28 @@ python DigTWIN_scenarii_AquaCrop_withDA.py -study ET_scenarii -sc 0 -weather_sce
 
 # Majadas 
 # -----------------------------------------------------------------------
-python Majadas_hydroModel.py -prj_name Majadas_daily_WTD1 -short 0 -WTD 2
-python Majadas_hydroModel.py -prj_name Majadas_2024_WTD1 -short 1 -WTD 2
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_100 -short 1 -WTD 2 -SCF 1
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_100 -short 0 -WTD 2 -SCF 1
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_100 -short 1 -WTD 5 -SCF 1
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_100 -short 0 -WTD 5 -SCF 1
+
+
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_5000 -short 1 -WTD 2 -SCF 1
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_5000 -short 0 -WTD 2 -SCF 1
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_5000 -short 1 -WTD 5 -SCF 1
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_5000 -short 0 -WTD 5 -SCF 1
+
+
+
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_5000 -short 0 -WTD 5
+python Majadas_hydroModel.py -prj_name Majadas -AOI Buffer_5000 -short 1 -WTD 5
+
+
+# Majadas with DA
+# -----------------------------------------------------------------------
+python DA_ETa_Majadas.py -study ZROOT -sc 0 -nens 24 -DAtype enkf_Evensen2009 -dataErr 1e99 -refModel prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1 -DA_loc_domain veg_map -short 0 -rainSeasonDA 0
+python DA_ETa_Majadas.py -study ZROOT -sc 0 -nens 24 -DAtype enkf_Evensen2009 -dataErr 1e-13 -refModel prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1 -DA_loc_domain veg_map -short 0 -rainSeasonDA 0
+
+python DA_ETa_Majadas.py -study ZROOT -sc 1 -nens 32 -DAtype enkf_Evensen2009 -dataErr 1e99 -refModel prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1 -DA_loc_domain veg_map -short 0 -rainSeasonDA 0
+python DA_ETa_Majadas.py -study ZROOT -sc 1 -nens 32 -DAtype enkf_Evensen2009 -dataErr 1e-13 -refModel prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1 -DA_loc_domain veg_map -short 0 -rainSeasonDA 0
+

@@ -16,6 +16,11 @@ import matplotlib.pyplot as plt
 import Majadas_utils
 # from pysheds.grid import Grid
 
+
+AOI = 'Buffer_5000' #H2_Bassin
+# AOI = 'Buffer_100'
+# AOI = 'H2_Bassin'
+
 #%% Define path and crs projection 
 prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
 rootDataPath = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/MAJADAS/')
@@ -52,7 +57,7 @@ clipped_DTM_rxr = DTM_tile.rio.clip_box(
 clipped_DTM_rxr_reproj = clipped_DTM_rxr.rio.reproject(crs_ET_0)
 clipped_DTM_rxr_reproj.isel(band=0).plot.imshow()
 clipped_DTM_rxr_reproj.rio.resolution()
-clipped_DTM_rxr_reproj.rio.to_raster('../data/Spain/clipped_DTM_Majadas_AOI.tif', 
+clipped_DTM_rxr_reproj.rio.to_raster(f'../data/Spain/clipped_DTM_Majadas_AOI_{AOI}.tif', 
                               # compress='LZMA', 
                               # tiled=True, 
                               # dtype="int32"
@@ -74,7 +79,7 @@ clipped_DTM_H2_rxr = DTM_tile.rio.clip_box(
 clipped_DTM_H2_rxr_reproj = clipped_DTM_H2_rxr.rio.reproject(crs_ET_0)
 clipped_DTM_H2_rxr_reproj.isel(band=0).plot.imshow()
 clipped_DTM_H2_rxr_reproj.rio.resolution()
-clipped_DTM_H2_rxr_reproj.rio.to_raster('../data/Spain/clipped_DTM_H2_Majadas_AOI.tif', 
+clipped_DTM_H2_rxr_reproj.rio.to_raster('../data/Spain/clipped_DTM_Majadas_AOI_H2.tif', 
                               # compress='LZMA', 
                               # tiled=True, 
                               # dtype="int32"
