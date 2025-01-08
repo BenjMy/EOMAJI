@@ -34,7 +34,7 @@ def get_cmd():
                         type=int, 
                         help='study id',
                         required=False,
-                        default=10
+                        default=12
                         )  #default='ZROOTdim2') #default='ET_scenarii')
     parser.add_argument('-AOI', type=str, help='Area of Interest',
                         default='Buffer_100', 
