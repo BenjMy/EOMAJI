@@ -116,7 +116,9 @@ CLC_Majadas = Majadas_utils.get_LandCoverMap()
 CLC_clipped = gpd.clip(CLC_Majadas, 
                         majadas_aoi
                         )
-
+CLC_clipped.columns
+CLC_clipped.to_file('../prepro/Majadas/CLC_Majadas_clipped.shp')
+# sdd
 # clc_codes_int = [int(clci) for clci in clc_codes.keys()]
 categorical_enums = {'Code_18': clc_codes}
 

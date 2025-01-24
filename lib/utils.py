@@ -90,6 +90,10 @@ def apply_time_window_mean(ds_analysis,time_window=10,p=''):
     # ds_analysis["ratio_ETap_local"].time.where(time_mask, drop=False)
                                                     
     return ds_analysis
+
+
+ 
+    
     
 def compute_ratio_ETap_local(ds_analysis, 
                               ETa_name='ACT. ETRA', 
@@ -934,17 +938,17 @@ def get_irr_time_trigger(grid_xr,irr_patch_center):
         
 
 
-def irrigation_delineation(decision_ds,
+def irrigation_delineation(ds_analysis,
                            threshold_local=0.25,
                            threshold_regional=0.25,
                            time_window=10,
                            ):
-    decision_ds = utils.compute_ratio_ETap_local(decision_ds,time_window=time_window)
+    decision_ds = utils.compute_ratio_ETap_local(ds_analysis,time_window=time_window)
     decision_ds = utils.compute_ratio_ETap_regional(decision_ds,time_window=time_window)
 
     # Create a boolean that check changes in ratioETap "ratio_ETap_local_diff"
     # -------------------------------------------------------------------------
-    decision_ds = compute_bool_threshold_decision_local(decision_ds,
+    decision_ds = compute_bool_threshold_decision_local(ds_analysis,
                                                         threshold_local
                                                         )
 
