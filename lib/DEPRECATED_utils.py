@@ -24,8 +24,6 @@ import xarray as xr
 
 from matplotlib.animation import FuncAnimation
 from matplotlib import animation
-from shapely.geometry import mapping
-from scipy import stats
 from scipy.ndimage import label, center_of_mass
 
 import july
@@ -735,61 +733,6 @@ def export_tif2netcdf(pathTif2read='../prepro/Majadas/',fieldsite='Majadas'):
     ETa = xr.concat(ETa_l,dim='time')
     ETa.to_netcdf(f'../prepro/Majadas/ETa_{fieldsite}.netcdf')
 
-def read_prepo_EO_datasets(fieldsite='Majadas',
-                           AOI='Buffer_5000',
-                           crs=None
-                           ):
-            
-    ETa_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETa_{fieldsite}.netcdf',
-                             # engine='scipy'
-                             )
-    ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
-    ETp_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETp_{fieldsite}.netcdf')
-    ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
-    RAIN_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/RAIN_{fieldsite}.netcdf')
-    RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
-    CLC_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/CLCover_{fieldsite}.netcdf')
-
-    ds_analysis_EO = ETa_ds.drop_vars('spatial_ref', errors='ignore').isel(band=0)
-    ds_analysis_EO['ETp'] = ETp_ds.to_dataarray().isel(band=0).sel(variable='ETp')
-    ds_analysis_EO['RAIN'] = RAIN_ds.to_dataarray().isel(band=0).sel(variable='RAIN')
-
-    CLC_ds = CLC_ds.drop_vars('spatial_ref', errors='ignore')
-    ds_analysis_EO['CLC_code18'] = CLC_ds.Code_18
-    ds_analysis_EO = ds_analysis_EO.sortby('time')
-    
-    ds_analysis_EO = ds_analysis_EO.rio.write_crs(crs)
-    # ds_analysis_EO.ETa
-    
-    nulltimeETa = np.where(ds_analysis_EO.ETa.isnull().all())[0]
-    valid_mask = ~ds_analysis_EO.time.isin(ds_analysis_EO.time[nulltimeETa])
-    
-    if len(nulltimeETa)>1:
-        print('times with null ETa values!!')
-    ds_analysis_EO = ds_analysis_EO.isel(time=valid_mask)
-    
-    print('Errrrrorrr in rain evaluation in the input!')
-    # data_array = data_array.where((data_array <= 300) & (data_array > 0), other=np.nan)
-    # ds_analysis_EO['RAIN'] = ds_analysis_EO['RAIN'].where((ds_analysis_EO['RAIN'] <= 300) & (ds_analysis_EO['RAIN'] > 0), 
-    #                                                       other=0)
-    
-    ds_analysis_EO['RAIN'] = ds_analysis_EO['RAIN'].where(
-                                    (ds_analysis_EO['RAIN'] <= 300) & (ds_analysis_EO['RAIN'] > 0) | ds_analysis_EO['RAIN'].isnull(), 
-                                    other=0
-                                )
-    # Determine the overlapping time range
-    start_time = max(ds_analysis_EO['RAIN'].time.min(), ds_analysis_EO['ETp'].time.min())
-    end_time = min(ds_analysis_EO['RAIN'].time.max(), ds_analysis_EO['ETp'].time.max())
-
-    # Create a mask for the common time range
-    mask_time = (ds_analysis_EO['RAIN'].time >= start_time) & (ds_analysis_EO['RAIN'].time <= end_time)
-    mask_time2 = (ds_analysis_EO['ETp'].time >= start_time) & (ds_analysis_EO['ETp'].time <= end_time)
-
-    # Filter the DataArrays using the mask
-    ds_analysis_EO = ds_analysis_EO.sel(time=mask_time)
-    ds_analysis_EO = ds_analysis_EO.sel(time=mask_time2)
-
-    return ds_analysis_EO
 
 
 def spatial_ET_animated(simu,fig,ax):
@@ -868,40 +811,7 @@ def plot_time_serie_ETa_CATHY_TSEB(key_cover,
     plt.legend()
     plt.title(key_cover)
 
-def clip_ET_withLandCover(LCnames,
-                          gdf_AOI,
-                          ETxr,
-                          ETname = 'ACT. ETRA',
-                          crs_ET = None,
-                          axs = None
-                          ):
-    
-    for axi, lcn in zip(axs,LCnames):
-        CLC_mask = gdf_AOI.set_index('POI/AOI').loc[lcn].geometry
-        ETxr = ETxr.rio.write_crs(crs_ET)
-        mask_ETA = ETxr[ETname].rio.clip(CLC_mask.apply(mapping), 
-                                 crs_ET, 
-                                 drop=False
-                                 )
-    
-        ETxr[lcn + '_CLCmask'] = mask_ETA
-        ETxr.isel(time=0)[lcn + '_CLCmask'].plot.imshow(ax=axi,
-                                                        )
-        axi.set_title(lcn)
-        axi.set_aspect('equal')
-        
-    return ETxr
 
-
-def perf_linreg(x,y): 
-    # Perform linear regression using scipy.stats.linregress
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x, 
-                                                                   y
-                                                                   )
-    y_pred = slope * x.values + intercept
-    r2 = r_value**2  # Compute R^2 value
-    
-    return y_pred, r2
 
 
 def get_irr_center_coords(irrigation_map):

@@ -19,19 +19,21 @@ from geocube.api.core import make_geocube
 import matplotlib.colors as mcolors
 
 import Majadas_utils
-import utils
+from centum import utils
+plt.rcParams['font.family'] = 'serif'  # You can also use 'Times New Roman', 'STIXGeneral', etc.
 
 #%% Define path and crs projection 
 # AOI = 'Buffer_5000' #H2_Bassin
-AOI = 'Buffer_100'
-# AOI = 'H2_Bassin'
+# AOI = 'Buffer_20000' #H2_Bassin
+# AOI = 'Buffer_100'
+AOI = 'H2_Bassin'
 reprocess = False
 shapefile_raster_resolution = 300
 
-# rootDataPath = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/MAJADAS/')
+rootPath = Path('../../')
 prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
 rootDataPath = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/MAJADAS/')
-figPath = Path('../figures/Majadas_test')
+figPath = Path('../../figures/Majadas_test')
 folder_weather_path = rootDataPath/'E030N006T6'
 
 crs_ET_0 = Majadas_utils.get_crs_ET()
@@ -39,8 +41,8 @@ crs_ET_0 = Majadas_utils.get_crs_ET()
 #%% Read AOI points and plots
 # -----------------------------------------------------------------------------
 # majadas_aoi = Majadas_utils.get_Majadas_aoi()
-majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=100)
-# majadas_aoi = gpd.read_file('../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
+# majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=20000)
+majadas_aoi = gpd.read_file('../../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
 # majadas_aoi.to_crs(crs_ET_0, inplace=True)
 majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
 
@@ -62,7 +64,7 @@ ET_test = rxr.open_rasterio(ET_0_filelist[0])
 if reprocess:
     #% CLIP to Majadas bassin
     # -------------------------------------------------------------------------
-    utils.clip_rioxarray(ET_filelist,
+    Majadas_utils.clip_rioxarray(ET_filelist,
                           ET_0_filelist,
                           rain_filelist,
                           majadas_aoi
@@ -71,20 +73,20 @@ if reprocess:
     # -------------------------------------------------------------------------
      # ! Majadas grids: S3/Meteo = E030N006T6 and S2/Landast = X0033_Y0044
     # S3/Meteo EPGS CRS EPSG:27704 - WGS 84 / Equi7 Europe - Projected
-    utils.export_tif2netcdf(fieldsite='Majadas')
+    Majadas_utils.export_tif2netcdf(fieldsite='Majadas')
     
-    ETa_ds = xr.open_dataset('../prepro/Majadas/{AOI}/ETa_Majadas.netcdf')
+    ETa_ds = xr.open_dataset(rootPath / 'prepro/Majadas/{AOI}/ETa_Majadas.netcdf')
     ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
     ETp_ds = xr.open_dataset('../prepro/Majadas/{AOI}/ETp_Majadas.netcdf')
     ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
     RAIN_ds = xr.open_dataset('../prepro/Majadas/{AOI}/RAIN_Majadas.netcdf')
     RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
 else:   
-    ETa_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETa_Majadas.netcdf')
+    ETa_ds = xr.open_dataset(rootPath /f'prepro/Majadas/{AOI}/ETa_Majadas.netcdf')
     ETa_ds = ETa_ds.rename({"__xarray_dataarray_variable__": "ETa"})
-    ETp_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/ETp_Majadas.netcdf')
+    ETp_ds = xr.open_dataset(rootPath /f'prepro/Majadas/{AOI}/ETp_Majadas.netcdf')
     ETp_ds = ETp_ds.rename({"__xarray_dataarray_variable__": "ETp"})
-    RAIN_ds = xr.open_dataset(f'../prepro/Majadas/{AOI}/RAIN_Majadas.netcdf')
+    RAIN_ds = xr.open_dataset(rootPath /f'prepro/Majadas/{AOI}/RAIN_Majadas.netcdf')
     RAIN_ds = RAIN_ds.rename({"__xarray_dataarray_variable__": "RAIN"})
 
 #%% Read TDR Majadas
@@ -117,7 +119,7 @@ CLC_clipped = gpd.clip(CLC_Majadas,
                         majadas_aoi
                         )
 CLC_clipped.columns
-CLC_clipped.to_file('../prepro/Majadas/CLC_Majadas_clipped.shp')
+CLC_clipped.to_file('../../prepro/Majadas/CLC_Majadas_clipped.shp')
 # sdd
 # clc_codes_int = [int(clci) for clci in clc_codes.keys()]
 categorical_enums = {'Code_18': clc_codes}
@@ -152,7 +154,7 @@ CLC_Majadas_clipped_grid['Code_CLC'] = CLC_Majadas_clipped_grid.Code_CLC.astype(
 
 # export to netcdf
 # -----------------------------------------
-CLC_Majadas_clipped_grid.to_netcdf(f'../prepro/Majadas/{AOI}/CLCover_Majadas.netcdf')
+CLC_Majadas_clipped_grid.to_netcdf(f'../../prepro/Majadas/{AOI}/CLCover_Majadas.netcdf')
 
 # plot
 # -----------------------------------------
@@ -224,7 +226,7 @@ fig.savefig(figPath/f'LandCoverRaster_Majadas_{AOI}.png',dpi=300)
 #%% Read Majadas DTM
 # import os
 # os.getcwd()
-clipped_DTM_rxr = rxr.open_rasterio(f'../data/Spain/clipped_DTM_Majadas_AOI_{AOI}.tif', 
+clipped_DTM_rxr = rxr.open_rasterio(f'../../data/Spain/clipped_DTM_Majadas_AOI_{AOI}.tif', 
                                     )
 #%% plot majadas DTM 
 fig, ax = plt.subplots()
@@ -247,7 +249,7 @@ ds_analysis_EO['ETp'] = ETp
 ds_analysis_EO['RAIN'] = RAIN
 CLC_Majadas_clipped_grid_no_spatial_ref = CLC_Majadas_clipped_grid.drop_vars('spatial_ref', errors='ignore')
 ds_analysis_EO['CLC'] = CLC_Majadas_clipped_grid_no_spatial_ref.Code_18
-ds_analysis_EO.to_netcdf(f'../prepro/ds_analysis_EO_{AOI}.netcdf')
+ds_analysis_EO.to_netcdf(f'../../prepro/ds_analysis_EO_{AOI}.netcdf')
 ds_analysis_EO = ds_analysis_EO.sortby('time')
 
 nulltimeETa = np.where(ds_analysis_EO.ETa.isel(x=0,y=0).isnull())[0]

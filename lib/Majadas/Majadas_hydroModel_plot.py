@@ -16,32 +16,35 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pyvista as pv
 import pandas as pd
-import utils
+# import DEPRECATED_utils as utils
+# from centum import utils
 import Majadas_utils
 import os
 import argparse
 from shapely.geometry import mapping
 from scipy import stats
 from pyCATHY import cathy_utils
+import matplotlib.dates as mdates
 
 cwd = os.getcwd()
 # prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_1_SCF_1.0_OMEGA_1'
-prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_1_SCF_1.0_OMEGA_1'
-prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_1.0_short_1_SCF_1.0_OMEGA_1'
-prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1'
+# prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_1_SCF_1.0_OMEGA_1'
+# prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_1.0_short_1_SCF_1.0_OMEGA_1'
+# prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_5.0_short_0_SCF_1.0_OMEGA_1'
 prj_name = 'prj_name_Majadas_AOI_Buffer_100_WTD_2.0_short_0_SCF_1.0_OMEGA_1'
 
 
-figPath = Path(cwd) / '../figures/' / prj_name
+figPath = Path(cwd) / '../../figures/' / prj_name
 figPath.mkdir(parents=True, exist_ok=True)
 
 prepoEOPath = Path('/run/media/z0272571a/SENET/iberia_daily/E030N006T6')
 
 plt.close('all')
 hydro_Majadas = CATHY(
-                        dirName='../WB_FieldModels/',
+                        dirName='../../WB_FieldModels/',
                         prj_name=prj_name
                       )
+plt.rcParams['font.family'] = 'serif'  # You can also use 'Times New Roman', 'STIXGeneral', etc.
 
 #%% Import input data 
 
@@ -51,14 +54,14 @@ ET_0_filelist = list(prepoEOPath.glob(file_pattern))
 crs_ET = rxr.open_rasterio(ET_0_filelist[0]).rio.crs
 ET_test = rxr.open_rasterio(ET_0_filelist[0])
 
-ds_analysis_EO = utils.read_prepo_EO_datasets(fieldsite='Majadas',
-                                              crs=crs_ET
-                                              )
+ds_analysis_EO = Majadas_utils.read_prepo_EO_datasets(fieldsite='Majadas',
+                                                      crs=crs_ET
+                                                      )
 
 #%% Get areas and point of interest 
 
 gdf_AOI_POI_Majadas = Majadas_utils.get_AOI_POI_Majadas(crs_ET)
-majadas_aoi = gpd.read_file('../data/AOI/majadas_aoi.geojson')
+majadas_aoi = gpd.read_file('../../data/AOI/majadas_aoi.geojson')
 majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
 
 is_point = gdf_AOI_POI_Majadas.geometry.geom_type == 'Point'
@@ -332,7 +335,7 @@ LCnames = ['irrigated','agroforestry']
 fig, axs = plt.subplots(1,len(LCnames),
                         sharex=True,sharey=True,
                         )
-df_fort777_select_t_xr = utils.clip_ET_withLandCover(LCnames = LCnames,
+df_fort777_select_t_xr = Majadas_utils.clip_ET_withLandCover(LCnames = LCnames,
                                                        gdf_AOI = gdf_AOI_POI_Majadas,
                                                        ETxr = df_fort777_select_t_xr,
                                                        ETname = 'ACT. ETRA',
@@ -347,7 +350,7 @@ fig.savefig(f'{figPath}/WB_ETa_CATHY_CLCmask.png',
 fig, axs = plt.subplots(1,len(LCnames),
                         sharex=True,sharey=True
                         )
-ds_analysis_EO = utils.clip_ET_withLandCover(LCnames = LCnames,
+ds_analysis_EO = Majadas_utils.clip_ET_withLandCover(LCnames = LCnames,
                                               gdf_AOI = gdf_AOI_POI_Majadas,
                                               ETxr = ds_analysis_EO,
                                               ETname = 'ETa',
@@ -378,10 +381,10 @@ axs[1].scatter(ETa_TSEB_irrigated,
                ETa_TSEB_agroforestry,
                )
 
-y_pred_baseline, r2_baseline = utils.perf_linreg(ETa_baseline_irrigated,
+y_pred_baseline, r2_baseline = Majadas_utils.perf_linreg(ETa_baseline_irrigated,
                                            ETa_baseline_agroforestry
                                            )
-y_pred_TSEB, r2_TSEB = utils.perf_linreg(ETa_TSEB_irrigated,
+y_pred_TSEB, r2_TSEB = Majadas_utils.perf_linreg(ETa_TSEB_irrigated,
                                    ETa_TSEB_agroforestry,
                                    )
 len(ETa_TSEB_irrigated.time)
@@ -493,13 +496,35 @@ for axi, lcn in zip(axs,LCnames):
             label='CATHY'
             )
     
-    axi.set_xlabel('Date')
     axi.set_ylabel('ETa (mm/day)')
     axi.set_title(lcn)
-plt.legend()
-axs[0].set_xlabel('')
+    
+    axi.set_xlim([pd.to_datetime('01/01/2023'),
+                  max(ETa_AOIi_mean['datetime'])
+                  ]
+                 )
+    
+    # axi.set_xlim([min(ETa_AOIi_mean['datetime']),
+    #               max(ETa_AOIi_mean['datetime'])
+    #               ]
+    #              )
+    axi.set_ylabel(r'$ET_{a}$ [mm/day]')
+    axi.axvspan('2023-07-01', '2023-09-01',
+                color='blue', 
+                alpha=0.1,
+                linestyle='--')
+
+    axi.xaxis.set_major_locator(mdates.AutoDateLocator())  # Automatically adjust tick spacing
+    axi.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+    axi.tick_params(axis='x', rotation=45)  
+    axi.set_ylim([0,8
+                 ])
+
+axi.set_xlabel('Date')
+plt.legend([r'$ET_{a_{EB}}$', r'$ET_{a_{WB}}$'])
+# axs[0].set_xlabel('')
 fig.savefig(f'{figPath}/{lcn}_MASK_mean_ETa_hydro_ETa_Energy_{prj_name}.png',
-            dpi=300
+            dpi=400
             )
     
 
@@ -528,7 +553,7 @@ fig.savefig(f'{figPath}/{lcn}_MASK_mean_ETa_hydro_ETa_Energy_{prj_name}.png',
 for key_cover in ['Intensive Irrigation','Tree-Grass','Agricutural fields','Lake']:
     fig, ax = plt.subplots()
     xPOI, yPOI =  gdf_AOI_POI_Majadas.set_index('POI/AOI').loc[key_cover].geometry.coords[0]
-    utils.plot_time_serie_ETa_CATHY_TSEB(key_cover,
+    Majadas_utilsutils.plot_time_serie_ETa_CATHY_TSEB(key_cover,
                                          df_fort777_select_t_xr,
                                          ds_analysis_EO,
                                          xPOI, yPOI,

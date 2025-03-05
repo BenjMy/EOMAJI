@@ -1,10 +1,11 @@
 # Work in Progress
 
+ - [ ] READ: https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2024MS004433
 
 ## Processing
 
  - [ ] improve centum 
-   - make it works for AQUACROP inputs 
+   - [x] make it works for AQUACROP inputs 
    - make it works for Majadas inputs
 - [ ] agricultural plot delineation using https://github.com/fieldsoftheworld
 - [ ] Daily probability can be sum up to monthly values to improve estimates!
@@ -26,6 +27,9 @@
 - [ ] Issue with plot psi = f(time days). Values are shifted compare to real irrigations times.
 
 ### 💧 Water balance/ Land surface **Synthetic** modeling
+1. fwd model of hydro model (to make sure the mesh is more and less ok) + comparison with twin solution data
+2. DA to calibrate soil / other parameters 
+3. Water delimitation and accounting 
 
 - [x] Detecting event and classify!
 - [ ] Water **quantification**: this can be done to a daily/weekly/monthly scale
@@ -69,10 +73,15 @@ For both it is necessary to write the soil file accordingly
 - [ ] irrigation amount
 
 ### 💧 Water balance/ Land surface **Real field** modeling
+Steps: 
+1. fwd model of hydro model (to make sure the mesh is more and less ok) + comparison with in-situ data
+2. DA to calibrate soil 
+3. Water delimitation and accounting 
+
 - real data EOMAJI's field site:
   - [ ] **Spain Majadas**
-    - [ ] Extend to full catchment
-    - [x]define root map with respect to corinne land cover
+    - [ ] Extend to full catchment (use whitebox?)
+    - [x] define root map with respect to corinne land cover
     - [ ] add EC towers as points of interest
     - [x] check simulation inputs
     - [ ] compare with REAL dataset 
@@ -89,7 +98,7 @@ For both it is necessary to write the soil file accordingly
 
 ## Redaction
 - [ ] **WEB**, publish results in myst pages
-- [ ] **Poster** Frascati
+- [x] **Poster** Frascati
 - [ ] Peer review article:
   - [ ] **Title**: Water accounting in a semi-arid savanna type ecosystem
         - Geophysics + water balance at majadas field site
