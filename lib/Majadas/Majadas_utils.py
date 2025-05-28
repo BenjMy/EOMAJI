@@ -148,8 +148,10 @@ def get_AOI_POI_Majadas(crs_ET):
 # SMC field sensors position
 # --------------------------
 
-def get_SWC_pos(path='../../data/Spain/Majadas/TDR/Majadas_coord_SWC_sensors_Benjamin.csv',
-                   target_crs=None):
+def get_SWC_pos(
+                # path='../../data/Spain/Majadas/TDR/Majadas_coord_SWC_sensors_Benjamin.csv',
+                path='/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/data/Spain/Majadas/TDR/Majadas_coord_SWC_sensors_Benjamin.csv',
+                target_crs=None):
     '''
     Import SWC content locations Majadas de Tietar
     '''
@@ -179,7 +181,11 @@ def get_SWC_pos(path='../../data/Spain/Majadas/TDR/Majadas_coord_SWC_sensors_Ben
 
 # Read SMC field sensors
 # ----------------------
-def get_SWC_data(path='../../data/Spain/Majadas/TDR/LMA_Meteo_2022-2023_Benjamin.csv'):   
+def get_SWC_data(
+        # path='../../data/Spain/Majadas/TDR/LMA_Meteo_2022-2023_Benjamin.csv'
+        path='/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/data/Spain/Majadas/TDR/LMA_Meteo_2022-2023_Benjamin.csv'
+        
+        ):   
     TDR = pd.read_csv(path)
     TDR.set_index('rDate',inplace=True)
     TDR.index = pd.to_datetime(TDR.index, format='%d/%m/%Y %H:%M')
@@ -198,7 +204,8 @@ def get_LandCoverMap(crs=None):
     if crs is None:
         crs = get_crs_ET()
     # get Corine Land Cover map for Majadas 
-    CLC_path = Path('../../data/Spain/Copernicus_95732/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
+    # CLC_path = Path('../../data/Spain/Copernicus_95732/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
+    CLC_path = Path('/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/data/Spain/Copernicus_95732/U2018_CLC2018_V2020_20u1.shp/U2018_CLC2018_V2020_20u1.shp')
     CLC_Majadas = gpd.read_file(CLC_path)
     CLC_Majadas.to_crs(crs, inplace=True)
 

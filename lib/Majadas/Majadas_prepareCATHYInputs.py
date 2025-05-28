@@ -23,10 +23,10 @@ from centum import utils
 plt.rcParams['font.family'] = 'serif'  # You can also use 'Times New Roman', 'STIXGeneral', etc.
 
 #%% Define path and crs projection 
-# AOI = 'Buffer_5000' #H2_Bassin
+AOI = 'Buffer_5000' #H2_Bassin
 # AOI = 'Buffer_20000' #H2_Bassin
 # AOI = 'Buffer_100'
-AOI = 'H2_Bassin'
+# AOI = 'H2_Bassin'
 reprocess = False
 shapefile_raster_resolution = 300
 
@@ -41,8 +41,8 @@ crs_ET_0 = Majadas_utils.get_crs_ET()
 #%% Read AOI points and plots
 # -----------------------------------------------------------------------------
 # majadas_aoi = Majadas_utils.get_Majadas_aoi()
-# majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=20000)
-majadas_aoi = gpd.read_file('../../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
+majadas_aoi = Majadas_utils.get_Majadas_aoi(buffer=5000)
+# majadas_aoi = gpd.read_file('../../data/Spain/GIS_catchment_majadas/BassinH2_Majadas_corrected.shp')
 # majadas_aoi.to_crs(crs_ET_0, inplace=True)
 majadas_POIs, POIs_coords = Majadas_utils.get_Majadas_POIs()
 
@@ -226,7 +226,9 @@ fig.savefig(figPath/f'LandCoverRaster_Majadas_{AOI}.png',dpi=300)
 #%% Read Majadas DTM
 # import os
 # os.getcwd()
-clipped_DTM_rxr = rxr.open_rasterio(f'../../data/Spain/clipped_DTM_Majadas_AOI_{AOI}.tif', 
+clipped_DTM_rxr = rxr.open_rasterio(
+                                    f'/run/media/z0272571a/LVM_16Tb/Ben/EOMAJI/data/Spain/clipped_DTM_Majadas_AOI_{AOI}.tif', 
+                                    # f'../../data/Spain/clipped_DTM_Majadas_AOI_{AOI}.tif', 
                                     )
 #%% plot majadas DTM 
 fig, ax = plt.subplots()
@@ -242,6 +244,22 @@ ETp = ETp_ds.to_dataarray().isel(variable=0,band=0).sortby('time')
 RAIN = RAIN_ds.to_dataarray().isel(variable=0,band=0).sortby('time')
 print('Errrrrorrr in rain evaluation in the input!')
 RAIN = RAIN.where((RAIN <= 300) & (RAIN > 0), other=0)
+
+
+
+#%% Export to csvfor Maria
+ETp_1D_Maria = ETp.mean(dim=["x", "y"])
+ETp_1D_Maria.name = "ETp_1D"
+df_ETp_1D_Maria = ETp_1D_Maria.to_dataframe().reset_index()
+df_ETp_1D_Maria.to_csv("../../prepro/mean_xy_timeseries_ETp_MAJADAS.csv", index=False)
+
+RAIN_1D_Maria = ETp.mean(dim=["x", "y"])
+RAIN_1D_Maria.name = "RAIN_1D"
+df_RAIN_1D_Maria = RAIN_1D_Maria.to_dataframe().reset_index()
+df_RAIN_1D_Maria.to_csv("../../prepro/mean_xy_timeseries_RAIN_MAJADAS.csv", index=False)
+
+
+#%%
 
 
 ds_analysis_EO = ETa_ds.isel(band=0)
